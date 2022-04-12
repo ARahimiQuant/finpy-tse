@@ -1,0 +1,10 @@
+LICENSE.txt
+README.md
+setup.cfg
+setup.py
+finpy_tse/__init__.py
+finpy_tse.egg-info/PKG-INFO
+finpy_tse.egg-info/SOURCES.txt
+finpy_tse.egg-info/dependency_links.txt
+finpy_tse.egg-info/requires.txt
+finpy_tse.egg-info/top_level.txt
