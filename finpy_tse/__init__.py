@@ -20,6 +20,7 @@ import time
 from persiantools import characters
 from IPython.display import clear_output
 
+headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 ################################################################################################################################################################################
 ################################################################################################################################################################################
 def __Check_JDate_Validity__(date, key_word):
@@ -43,7 +44,7 @@ def __Check_JDate_Validity__(date, key_word):
 def __Get_TSE_WebID__(stock):
     # search TSE function ------------------------------------------------------------------------------------------------------------
     def request(name):
-        page = requests.get(f'http://www.tsetmc.com/tsev2/data/search.aspx?skey={name}')
+        page = requests.get(f'http://www.tsetmc.com/tsev2/data/search.aspx?skey={name}', headers=headers)
         data = []
         for i in page.text.split(';') :
             try :
@@ -123,7 +124,7 @@ def __Get_TSE_Sector_WebID__(sector_name):
         sector_web_id = df_index_lookup.loc[sector_name]['Web-ID']
     except:
         sector_name = characters.fa_to_ar(sector_name)
-        page = requests.get(f'https://www.google.com/search?q={sector_name} tsetmc اطلاعات شاخص')
+        page = requests.get(f'https://www.google.com/search?q={sector_name} tsetmc اطلاعات شاخص', headers=headers)
         code = page.text.split('http://www.tsetmc.com/Loader.aspx%3FParTree%3D15131J%26i%3D')[1]
         code = code.split('&')[0]
         # check google acquired code with reference table
@@ -146,7 +147,7 @@ def Get_Price_History(stock = 'خودرو', start_date = '1400-01-01', end_date=
     """
     # a function to get price data from a given page ----------------------------------------------------------------------------------
     def get_price_data(ticker_no,ticker,name, data_part):
-        r = requests.get(f'http://members.tsetmc.com/tsev2/data/InstTradeHistory.aspx?i={ticker_no}&Top=999999&A=0')
+        r = requests.get(f'http://members.tsetmc.com/tsev2/data/InstTradeHistory.aspx?i={ticker_no}&Top=999999&A=0', headers=headers)
         df_history=pd.DataFrame(r.text.split(';'))
         columns=['Date','High','Low','Final','Close','Open','Y-Final','Value','Volume','No']
         #split data into defined columns
@@ -243,7 +244,7 @@ def Get_RI_History(stock = 'خودرو', start_date = '1400-01-01', end_date='14
     """
     # a function to get ri data from a given page ----------------------------------------------------------------------------------
     def get_ri_data(ticker_no,ticker,name, data_part):
-        r = requests.get(f'http://www.tsetmc.com/tsev2/data/clienttype.aspx?i={ticker_no}')
+        r = requests.get(f'http://www.tsetmc.com/tsev2/data/clienttype.aspx?i={ticker_no}', headers=headers)
         df_RI_tab=pd.DataFrame(r.text.split(';'))
         # define columns
         columns=['Date','No_Buy_R','No_Buy_I','No_Sell_R','No_Sell_I','Vol_Buy_R','Vol_Buy_I','Vol_Sell_R','Vol_Sell_I','Val_Buy_R','Val_Buy_I','Val_Sell_R','Val_Sell_I']
@@ -333,7 +334,7 @@ def Get_CWI_History(start_date = '1395-01-01', end_date='1400-12-29', ignore_dat
     #---------------------------------------------------------------------------------------------------------------------------------------
     sector_web_id = 32097828799138957
     # get only close chart data for sector index:
-    r_cl = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i={sector_web_id}&t=value')
+    r_cl = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i={sector_web_id}&t=value', headers=headers)
     df_sector_cl = pd.DataFrame(r_cl.text.split(';'))
     columns=['J-Date','Adj Close']
     df_sector_cl[columns] = df_sector_cl[0].str.split(",",expand=True)
@@ -347,7 +348,7 @@ def Get_CWI_History(start_date = '1395-01-01', end_date='1400-12-29', ignore_dat
     df_sector_cl = df_sector_cl[['Date','Weekday','Adj Close']]
     df_sector_cl['Adj Close'] = pd.to_numeric(df_sector_cl['Adj Close'])
     if(not just_adj_close):
-        r = requests.get(f'http://www.tsetmc.com/tsev2/chart/data/IndexFinancial.aspx?i={sector_web_id}&t=ph')
+        r = requests.get(f'http://www.tsetmc.com/tsev2/chart/data/IndexFinancial.aspx?i={sector_web_id}&t=ph', headers=headers)
         df_sector = pd.DataFrame(r.text.split(';'))
         columns=['Date','High','Low','Open','Close','Volume','D']
         # split data into defined columns
@@ -397,7 +398,7 @@ def Get_EWI_History(start_date = '1395-01-01', end_date='1400-12-29', ignore_dat
     #---------------------------------------------------------------------------------------------------------------------------------------
     sector_web_id = 67130298613737946
     # get only close chart data for sector index:
-    r_cl = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i={sector_web_id}&t=value')
+    r_cl = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i={sector_web_id}&t=value', headers=headers)
     df_sector_cl = pd.DataFrame(r_cl.text.split(';'))
     columns=['J-Date','Adj Close']
     df_sector_cl[columns] = df_sector_cl[0].str.split(",",expand=True)
@@ -411,7 +412,7 @@ def Get_EWI_History(start_date = '1395-01-01', end_date='1400-12-29', ignore_dat
     df_sector_cl = df_sector_cl[['Date','Weekday','Adj Close']]
     df_sector_cl['Adj Close'] = pd.to_numeric(df_sector_cl['Adj Close'])
     if(not just_adj_close):
-        r = requests.get(f'http://www.tsetmc.com/tsev2/chart/data/IndexFinancial.aspx?i={sector_web_id}&t=ph')
+        r = requests.get(f'http://www.tsetmc.com/tsev2/chart/data/IndexFinancial.aspx?i={sector_web_id}&t=ph', headers=headers)
         df_sector = pd.DataFrame(r.text.split(';'))
         columns=['Date','High','Low','Open','Close','Volume','D']
         # split data into defined columns
@@ -445,7 +446,8 @@ def __Get_Day_IntradayTrades__(ticker_no, j_date):
     date = jdatetime.date(int(year), int(month), int(day)).togregorian()
     date = f'{date.year:04}{date.month:02}{date.day:02}'
     # request and process
-    page = requests.get(f'http://cdn.tsetmc.com/api/Trade/GetTradeHistory/{ticker_no}/{date}/false')
+    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
+    page = requests.get(f'http://cdn.tsetmc.com/api/Trade/GetTradeHistory/{ticker_no}/{date}/false', headers=headers)
     df_intraday = (pd.DataFrame(page.json()['tradeHistory'])).iloc[:,2:6]
     df_intraday = df_intraday.sort_values(by='nTran')
     df_intraday.drop(columns=['nTran'],inplace=True)
@@ -465,8 +467,9 @@ def Get_IntradayTrades_History(stock = 'وخارزم', start_date = '1400-09-15'
     توجه داشته باشید که معاملات باطل شده نماد در خروجی این تابع نمایش داده نمی شود
     """
     # a function to get price data from a given page ----------------------------------------------------------------------------------
+    failed_jdates = []
     def get_price_data_forintraday(ticker_no):
-        r = requests.get(f'http://members.tsetmc.com/tsev2/data/InstTradeHistory.aspx?i={ticker_no}&Top=999999&A=0')
+        r = requests.get(f'http://members.tsetmc.com/tsev2/data/InstTradeHistory.aspx?i={ticker_no}&Top=999999&A=0', headers=headers)
         df_history=pd.DataFrame(r.text.split(';'))
         columns=['Date','High','Low','Final','Close','Open','Y-Final','Value','Volume','No']
         #split data into defined columns
@@ -521,11 +524,14 @@ def Get_IntradayTrades_History(stock = 'وخارزم', start_date = '1400-09-15'
         df_intraday = pd.DataFrame(columns=['J-Date','Time','Volume','Price']).set_index(['J-Date','Time'])
         day_counter = 1
         for j_date in j_date_list:
+            try:
                 df_intraday = pd.concat([df_intraday,__Get_Day_IntradayTrades__(ticker_no_list[day_counter-1], j_date)], axis=0)
-                if(show_progress):
-                    clear_output(wait=True)
-                    print('Progress : ', f'{round((day_counter)/no_days*100,1)} %')
-                day_counter+=1
+            except:
+                failed_jdates.append(j_date)
+            if(show_progress):
+                clear_output(wait=True)
+                print('Progress : ', f'{round((day_counter)/no_days*100,1)} %')
+            day_counter+=1
     # other settings -------------------------------------------------------------------------------------------------------------
     if(jalali_date):
         if(combined_datatime):
@@ -550,6 +556,10 @@ def Get_IntradayTrades_History(stock = 'وخارزم', start_date = '1400-09-15'
             df_intraday.drop(columns=['J-Date'],inplace=True)
             df_intraday = df_intraday.set_index(['Date','Time'])
     df_intraday[['Volume','Price']] = df_intraday[['Volume','Price']].astype('int64')
+    # warning for failed dates:
+    if(len(failed_jdates)!=0):
+        print('WARNING: The following days data is not available on TSE website, even if those are trading days!')
+        print(failed_jdates)
     return df_intraday
 
 ################################################################################################################################################################################
@@ -570,7 +580,7 @@ def Get_USD_RIAL(start_date = '1395-01-01', end_date='1400-12-29', ignore_date =
             print('Start date must be a day before end date!')
             return
     #---------------------------------------------------------------------------------------------------------------------------------------
-    r = requests.get('https://platform.tgju.org/fa/tvdata/history?symbol=PRICE_DOLLAR_RL&resolution=1D')
+    r = requests.get('https://platform.tgju.org/fa/tvdata/history?symbol=PRICE_DOLLAR_RL&resolution=1D', headers=headers)
     df_data = r.json()
     df_data = pd.DataFrame({'Date':df_data['t'],'Open':df_data['o'],'High':df_data['h'],'Low':df_data['l'],'Close':df_data['c'],})
     df_data['Date'] = df_data['Date'].apply(lambda x: datetime.datetime.fromtimestamp(x))
@@ -601,12 +611,12 @@ def __Get_Day_MarketClose_BQ_SQ__(ticker_no, j_date):
     date = jdatetime.date(int(year), int(month), int(day)).togregorian()
     date = f'{date.year:04}{date.month:02}{date.day:02}'
     # get day upper and lower band prices:
-    page = requests.get(f'http://cdn.tsetmc.com/api/MarketData/GetStaticThreshold/{ticker_no}/{date}')
+    page = requests.get(f'http://cdn.tsetmc.com/api/MarketData/GetStaticThreshold/{ticker_no}/{date}', headers=headers)
     df_ub_lb = pd.DataFrame(page.json()['staticThreshold'])
     day_ub = df_ub_lb.iloc[-1]['psGelStaMax']    # day upper band price
     day_lb = df_ub_lb.iloc[-1]['psGelStaMin']    # day lower band price
     # get LOB data:
-    page = requests.get(f'http://cdn.tsetmc.com/api/BestLimits/{ticker_no}/{date}')
+    page = requests.get(f'http://cdn.tsetmc.com/api/BestLimits/{ticker_no}/{date}', headers=headers)
     data = pd.DataFrame(page.json()['bestLimitsHistory'])
     # find last orders before 12:30:00 (market close)
     time = 123000
@@ -644,7 +654,7 @@ def Get_Queue_History(stock = 'وخارزم', start_date = '1400-09-15', end_dat
     """
     # a function to get price data from a given page ----------------------------------------------------------------------------------
     def get_price_data_forintraday(ticker_no):
-        r = requests.get(f'http://members.tsetmc.com/tsev2/data/InstTradeHistory.aspx?i={ticker_no}&Top=999999&A=0')
+        r = requests.get(f'http://members.tsetmc.com/tsev2/data/InstTradeHistory.aspx?i={ticker_no}&Top=999999&A=0', headers=headers)
         df_history=pd.DataFrame(r.text.split(';'))
         columns=['Date','High','Low','Final','Close','Open','Y-Final','Value','Volume','No']
         #split data into defined columns
@@ -729,12 +739,12 @@ def __Get_Day_LOB__(ticker_no, j_date):
     date = jdatetime.date(int(year), int(month), int(day)).togregorian()
     date = f'{date.year:04}{date.month:02}{date.day:02}'
     # get day upper and lower band prices:
-    page = requests.get(f'http://cdn.tsetmc.com/api/MarketData/GetStaticThreshold/{ticker_no}/{date}')
+    page = requests.get(f'http://cdn.tsetmc.com/api/MarketData/GetStaticThreshold/{ticker_no}/{date}', headers=headers)
     df_ub_lb = pd.DataFrame(page.json()['staticThreshold'])
     day_ub = df_ub_lb.iloc[-1]['psGelStaMax']    # day upper band price
     day_lb = df_ub_lb.iloc[-1]['psGelStaMin']    # day lower band price
     # get LOB data:
-    page = requests.get(f'http://cdn.tsetmc.com/api/BestLimits/{ticker_no}/{date}')
+    page = requests.get(f'http://cdn.tsetmc.com/api/BestLimits/{ticker_no}/{date}',headers=headers)
     data = pd.DataFrame(page.json()['bestLimitsHistory'])
     data.drop(columns=['idn','dEven','refID','insCode'],inplace=True)
     data = data.sort_values(['hEven','number'], ascending = (True, True))
@@ -759,7 +769,7 @@ def Get_IntradayOB_History(stock = 'کرمان', start_date = '1400-08-01', end_
     """
 # a function to get price data from a given page ----------------------------------------------------------------------------------
     def get_price_data_forintraday(ticker_no):
-        r = requests.get(f'http://members.tsetmc.com/tsev2/data/InstTradeHistory.aspx?i={ticker_no}&Top=999999&A=0')
+        r = requests.get(f'http://members.tsetmc.com/tsev2/data/InstTradeHistory.aspx?i={ticker_no}&Top=999999&A=0', headers=headers)
         df_history=pd.DataFrame(r.text.split(';'))
         columns=['Date','High','Low','Final','Close','Open','Y-Final','Value','Volume','No']
         #split data into defined columns
@@ -874,7 +884,7 @@ def Get_SectorIndex_History(sector = 'خودرو', start_date='1395-01-01', end_
         return
     if(sector_web_id == None):
         return
-    r_cl = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i={sector_web_id}&t=value')
+    r_cl = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i={sector_web_id}&t=value', headers=headers)
     df_sector_cl = pd.DataFrame(r_cl.text.split(';'))
     columns=['J-Date','Adj Close']
     df_sector_cl[columns] = df_sector_cl[0].str.split(",",expand=True)
@@ -888,7 +898,7 @@ def Get_SectorIndex_History(sector = 'خودرو', start_date='1395-01-01', end_
     df_sector_cl = df_sector_cl[['Date','Weekday','Adj Close']]
     df_sector_cl['Adj Close'] = pd.to_numeric(df_sector_cl['Adj Close'])
     if(not just_adj_close):
-        r = requests.get(f'http://www.tsetmc.com/tsev2/chart/data/IndexFinancial.aspx?i={sector_web_id}&t=ph')
+        r = requests.get(f'http://www.tsetmc.com/tsev2/chart/data/IndexFinancial.aspx?i={sector_web_id}&t=ph', headers=headers)
         df_sector = pd.DataFrame(r.text.split(';'))
         columns=['Date','High','Low','Open','Close','Volume','D']
         # split data into defined columns
@@ -941,7 +951,7 @@ def Get_CWPI_History(start_date='1395-01-01', end_date='1400-12-29', ignore_date
     # get sector web-id ---------------------------------------------------------------------------------------------------------------------
     sector_web_id = 5798407779416661
     # get only close chart data for sector index:
-    r_cl = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i={sector_web_id}&t=value')
+    r_cl = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i={sector_web_id}&t=value', headers=headers)
     df_sector_cl = pd.DataFrame(r_cl.text.split(';'))
     columns=['J-Date','Adj Close']
     df_sector_cl[columns] = df_sector_cl[0].str.split(",",expand=True)
@@ -955,7 +965,7 @@ def Get_CWPI_History(start_date='1395-01-01', end_date='1400-12-29', ignore_date
     df_sector_cl = df_sector_cl[['Date','Weekday','Adj Close']]
     df_sector_cl['Adj Close'] = pd.to_numeric(df_sector_cl['Adj Close'])
     if(not just_adj_close):
-        r = requests.get(f'http://www.tsetmc.com/tsev2/chart/data/IndexFinancial.aspx?i={sector_web_id}&t=ph')
+        r = requests.get(f'http://www.tsetmc.com/tsev2/chart/data/IndexFinancial.aspx?i={sector_web_id}&t=ph', headers=headers)
         df_sector = pd.DataFrame(r.text.split(';'))
         columns=['Date','High','Low','Open','Close','Volume','D']
         # split data into defined columns
@@ -1007,7 +1017,7 @@ def Get_EWPI_History(start_date='1395-01-01', end_date='1400-12-29', ignore_date
     # get sector web-id ---------------------------------------------------------------------------------------------------------------------
     sector_web_id = 8384385859414435
     # get only close chart data for sector index:
-    r_cl = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i={sector_web_id}&t=value')
+    r_cl = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i={sector_web_id}&t=value', headers=headers)
     df_sector_cl = pd.DataFrame(r_cl.text.split(';'))
     columns=['J-Date','Adj Close']
     df_sector_cl[columns] = df_sector_cl[0].str.split(",",expand=True)
@@ -1021,7 +1031,7 @@ def Get_EWPI_History(start_date='1395-01-01', end_date='1400-12-29', ignore_date
     df_sector_cl = df_sector_cl[['Date','Weekday','Adj Close']]
     df_sector_cl['Adj Close'] = pd.to_numeric(df_sector_cl['Adj Close'])
     if(not just_adj_close):
-        r = requests.get(f'http://www.tsetmc.com/tsev2/chart/data/IndexFinancial.aspx?i={sector_web_id}&t=ph')
+        r = requests.get(f'http://www.tsetmc.com/tsev2/chart/data/IndexFinancial.aspx?i={sector_web_id}&t=ph', headers=headers)
         df_sector = pd.DataFrame(r.text.split(';'))
         columns=['Date','High','Low','Open','Close','Volume','D']
         # split data into defined columns
@@ -1073,7 +1083,7 @@ def Get_FFI_History(start_date='1395-01-01', end_date='1400-12-29', ignore_date 
     # get sector web-id ---------------------------------------------------------------------------------------------------------------------
     sector_web_id = 49579049405614711
     # get only close chart data for sector index:
-    r_cl = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i={sector_web_id}&t=value')
+    r_cl = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i={sector_web_id}&t=value', headers=headers)
     df_sector_cl = pd.DataFrame(r_cl.text.split(';'))
     columns=['J-Date','Adj Close']
     df_sector_cl[columns] = df_sector_cl[0].str.split(",",expand=True)
@@ -1087,7 +1097,7 @@ def Get_FFI_History(start_date='1395-01-01', end_date='1400-12-29', ignore_date 
     df_sector_cl = df_sector_cl[['Date','Weekday','Adj Close']]
     df_sector_cl['Adj Close'] = pd.to_numeric(df_sector_cl['Adj Close'])
     if(not just_adj_close):
-        r = requests.get(f'http://www.tsetmc.com/tsev2/chart/data/IndexFinancial.aspx?i={sector_web_id}&t=ph')
+        r = requests.get(f'http://www.tsetmc.com/tsev2/chart/data/IndexFinancial.aspx?i={sector_web_id}&t=ph', headers=headers)
         df_sector = pd.DataFrame(r.text.split(';'))
         columns=['Date','High','Low','Open','Close','Volume','D']
         # split data into defined columns
@@ -1139,7 +1149,7 @@ def Get_MKT1I_History(start_date='1395-01-01', end_date='1400-12-29', ignore_dat
     # get sector web-id ---------------------------------------------------------------------------------------------------------------------
     sector_web_id = 62752761908615603
     # get only close chart data for sector index:
-    r_cl = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i={sector_web_id}&t=value')
+    r_cl = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i={sector_web_id}&t=value', headers=headers)
     df_sector_cl = pd.DataFrame(r_cl.text.split(';'))
     columns=['J-Date','Adj Close']
     df_sector_cl[columns] = df_sector_cl[0].str.split(",",expand=True)
@@ -1153,7 +1163,7 @@ def Get_MKT1I_History(start_date='1395-01-01', end_date='1400-12-29', ignore_dat
     df_sector_cl = df_sector_cl[['Date','Weekday','Adj Close']]
     df_sector_cl['Adj Close'] = pd.to_numeric(df_sector_cl['Adj Close'])
     if(not just_adj_close):
-        r = requests.get(f'http://www.tsetmc.com/tsev2/chart/data/IndexFinancial.aspx?i={sector_web_id}&t=ph')
+        r = requests.get(f'http://www.tsetmc.com/tsev2/chart/data/IndexFinancial.aspx?i={sector_web_id}&t=ph', headers=headers)
         df_sector = pd.DataFrame(r.text.split(';'))
         columns=['Date','High','Low','Open','Close','Volume','D']
         # split data into defined columns
@@ -1205,7 +1215,7 @@ def Get_MKT2I_History(start_date='1395-01-01', end_date='1400-12-29', ignore_dat
     # get sector web-id ---------------------------------------------------------------------------------------------------------------------
     sector_web_id = 71704845530629737
     # get only close chart data for sector index:
-    r_cl = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i={sector_web_id}&t=value')
+    r_cl = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i={sector_web_id}&t=value', headers=headers)
     df_sector_cl = pd.DataFrame(r_cl.text.split(';'))
     columns=['J-Date','Adj Close']
     df_sector_cl[columns] = df_sector_cl[0].str.split(",",expand=True)
@@ -1219,7 +1229,7 @@ def Get_MKT2I_History(start_date='1395-01-01', end_date='1400-12-29', ignore_dat
     df_sector_cl = df_sector_cl[['Date','Weekday','Adj Close']]
     df_sector_cl['Adj Close'] = pd.to_numeric(df_sector_cl['Adj Close'])
     if(not just_adj_close):
-        r = requests.get(f'http://www.tsetmc.com/tsev2/chart/data/IndexFinancial.aspx?i={sector_web_id}&t=ph')
+        r = requests.get(f'http://www.tsetmc.com/tsev2/chart/data/IndexFinancial.aspx?i={sector_web_id}&t=ph', headers=headers)
         df_sector = pd.DataFrame(r.text.split(';'))
         columns=['Date','High','Low','Open','Close','Volume','D']
         # split data into defined columns
@@ -1271,7 +1281,7 @@ def Get_INDI_History(start_date='1395-01-01', end_date='1400-12-29', ignore_date
     # get sector web-id ---------------------------------------------------------------------------------------------------------------------
     sector_web_id = 43754960038275285
     # get only close chart data for sector index:
-    r_cl = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i={sector_web_id}&t=value')
+    r_cl = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i={sector_web_id}&t=value', headers=headers)
     df_sector_cl = pd.DataFrame(r_cl.text.split(';'))
     columns=['J-Date','Adj Close']
     df_sector_cl[columns] = df_sector_cl[0].str.split(",",expand=True)
@@ -1285,7 +1295,7 @@ def Get_INDI_History(start_date='1395-01-01', end_date='1400-12-29', ignore_date
     df_sector_cl = df_sector_cl[['Date','Weekday','Adj Close']]
     df_sector_cl['Adj Close'] = pd.to_numeric(df_sector_cl['Adj Close'])
     if(not just_adj_close):
-        r = requests.get(f'http://www.tsetmc.com/tsev2/chart/data/IndexFinancial.aspx?i={sector_web_id}&t=ph')
+        r = requests.get(f'http://www.tsetmc.com/tsev2/chart/data/IndexFinancial.aspx?i={sector_web_id}&t=ph', headers=headers)
         df_sector = pd.DataFrame(r.text.split(';'))
         columns=['Date','High','Low','Open','Close','Volume','D']
         # split data into defined columns
@@ -1337,7 +1347,7 @@ def Get_LCI30_History(start_date='1395-01-01', end_date='1400-12-29', ignore_dat
     # get sector web-id ---------------------------------------------------------------------------------------------------------------------
     sector_web_id = 10523825119011581
     # get only close chart data for sector index:
-    r_cl = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i={sector_web_id}&t=value')
+    r_cl = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i={sector_web_id}&t=value', headers=headers)
     df_sector_cl = pd.DataFrame(r_cl.text.split(';'))
     columns=['J-Date','Adj Close']
     df_sector_cl[columns] = df_sector_cl[0].str.split(",",expand=True)
@@ -1351,7 +1361,7 @@ def Get_LCI30_History(start_date='1395-01-01', end_date='1400-12-29', ignore_dat
     df_sector_cl = df_sector_cl[['Date','Weekday','Adj Close']]
     df_sector_cl['Adj Close'] = pd.to_numeric(df_sector_cl['Adj Close'])
     if(not just_adj_close):
-        r = requests.get(f'http://www.tsetmc.com/tsev2/chart/data/IndexFinancial.aspx?i={sector_web_id}&t=ph')
+        r = requests.get(f'http://www.tsetmc.com/tsev2/chart/data/IndexFinancial.aspx?i={sector_web_id}&t=ph', headers=headers)
         df_sector = pd.DataFrame(r.text.split(';'))
         columns=['Date','High','Low','Open','Close','Volume','D']
         # split data into defined columns
@@ -1403,7 +1413,7 @@ def Get_ACT50_History(start_date='1395-01-01', end_date='1400-12-29', ignore_dat
     # get sector web-id ---------------------------------------------------------------------------------------------------------------------
     sector_web_id = 46342955726788357
     # get only close chart data for sector index:
-    r_cl = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i={sector_web_id}&t=value')
+    r_cl = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i={sector_web_id}&t=value', headers=headers)
     df_sector_cl = pd.DataFrame(r_cl.text.split(';'))
     columns=['J-Date','Adj Close']
     df_sector_cl[columns] = df_sector_cl[0].str.split(",",expand=True)
@@ -1417,7 +1427,7 @@ def Get_ACT50_History(start_date='1395-01-01', end_date='1400-12-29', ignore_dat
     df_sector_cl = df_sector_cl[['Date','Weekday','Adj Close']]
     df_sector_cl['Adj Close'] = pd.to_numeric(df_sector_cl['Adj Close'])
     if(not just_adj_close):
-        r = requests.get(f'http://www.tsetmc.com/tsev2/chart/data/IndexFinancial.aspx?i={sector_web_id}&t=ph')
+        r = requests.get(f'http://www.tsetmc.com/tsev2/chart/data/IndexFinancial.aspx?i={sector_web_id}&t=ph', headers=headers)
         df_sector = pd.DataFrame(r.text.split(';'))
         columns=['Date','High','Low','Open','Close','Volume','D']
         # split data into defined columns
@@ -1448,7 +1458,7 @@ def Get_MarketWatch(save_excel = True, save_path = 'D:/FinPy-TSE Data/MarketWatc
     #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # GET MARKET RETAIL AND INSTITUTIONAL DATA
     #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    r = requests.get('http://www.tsetmc.com/tsev2/data/ClientTypeAll.aspx')
+    r = requests.get('http://www.tsetmc.com/tsev2/data/ClientTypeAll.aspx', headers=headers)
     Mkt_RI_df = pd.DataFrame(r.text.split(';'))
     Mkt_RI_df = Mkt_RI_df[0].str.split(",",expand=True)
     # assign names to columns:
@@ -1463,7 +1473,7 @@ def Get_MarketWatch(save_excel = True, save_path = 'D:/FinPy-TSE Data/MarketWatc
     #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # GET MARKET WATCH PRICE AND OB DATA
     #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    r = requests.get('http://www.tsetmc.com/tsev2/data/MarketWatchPlus.aspx')
+    r = requests.get('http://www.tsetmc.com/tsev2/data/MarketWatchPlus.aspx', headers=headers)
     main_text = r.text
     Mkt_df = pd.DataFrame((main_text.split('@')[2]).split(';'))
     Mkt_df = Mkt_df[0].str.split(",",expand=True)
@@ -1478,7 +1488,7 @@ def Get_MarketWatch(save_excel = True, save_path = 'D:/FinPy-TSE Data/MarketWatc
     Mkt_df['Market'] = Mkt_df['Mkt-ID'].map({'300':'بورس','303':'فرابورس','305':'صندوق قابل معامله','309':'پایه','400':'حق تقدم بورس','403':'حق تقدم فرابورس','404':'حق تقدم پایه'})
     Mkt_df.drop(columns=['Mkt-ID'],inplace=True)   # we do not need Mkt-ID column anymore
     # assign sector names:
-    r = requests.get('http://www.tsetmc.com/Loader.aspx?ParTree=111C1213')
+    r = requests.get('http://www.tsetmc.com/Loader.aspx?ParTree=111C1213', headers=headers)
     sectro_lookup = (pd.read_html(r.text)[0]).iloc[1:,:]
     # convert from Arabic to Farsi and remove half-space
     sectro_lookup[1] = sectro_lookup[1].apply(lambda x: (str(x).replace('ي','ی')).replace('ك','ک'))
@@ -1736,7 +1746,7 @@ def Build_Market_StockList(bourse = True, farabourse = True, payeh = True, detai
             payeh_lookup['Ticker'] = payeh_lookup['Ticker'].apply(lambda x: characters.ar_to_fa(x))
             payeh_lookup = payeh_lookup.set_index('Ticker')
             # look for payeh market web-ids from market watch
-            r = requests.get('http://www.tsetmc.com/tsev2/data/MarketWatchPlus.aspx')
+            r = requests.get('http://www.tsetmc.com/tsev2/data/MarketWatchPlus.aspx', headers=headers)
             mkt_watch = pd.DataFrame((r.text.split('@')[2]).split(';'))
             mkt_watch = mkt_watch[0].str.split(",",expand=True)
             mkt_watch = mkt_watch[[0,2]]
@@ -1794,7 +1804,7 @@ def Build_Market_StockList(bourse = True, farabourse = True, payeh = True, detai
                 return df_final
             async def get_session(session, code):
                 url = f'http://www.tsetmc.com/Loader.aspx?Partree=15131M&i={code}'
-                async with session.get(url) as response:
+                async with session.get(url, headers=headers) as response:
                     data_text = await response.text()
                     soup = BeautifulSoup(data_text, 'html.parser')
                     table = soup.findAll("table", {"class": "table1"})
@@ -1859,7 +1869,7 @@ def __get_history_data_group_parallel__(stock_list) :
             async def get_data(session, stock):
                 url = f'http://www.tsetmc.com/tsev2/data/search.aspx?skey={stock}'
                 #ارسال درخواست
-                async with session.get(url) as response:
+                async with session.get(url, headers=headers) as response:
                     data_id = await response.text()
 
                     #تبدیل به لیست کردن دیتای مورد نیاز
@@ -1903,7 +1913,7 @@ def __get_history_data_group_parallel__(stock_list) :
             for stock in stock_list :
                 while True :
                     try :
-                        data_id = requests.get(f'http://www.tsetmc.com/tsev2/data/search.aspx?skey={stock}').text
+                        data_id = requests.get(f'http://www.tsetmc.com/tsev2/data/search.aspx?skey={stock}', headers=headers).text
                         break
                     except :
                         print('nn')
@@ -2028,7 +2038,7 @@ def __get_history_data_group_parallel__(stock_list) :
             async def get_data(session, code):
                 url = f'http://members.tsetmc.com/tsev2/data/InstTradeHistory.aspx?i={code}&Top=999999&A=0'
                 #ارسال درخواست
-                async with session.get(url) as response:
+                async with session.get(url, headers=headers) as response:
                     data_id = await response.text()
                     return [data_id,response.status]
 
@@ -2102,7 +2112,7 @@ def __process_price_data__(ticker_no, ticker, r, data_part):
     return df_history
 # ----------------------------------------------------------------------------------------------------------------------------------
 # process the data: responses might be duplicate
-def __build_price_panel_seg__(df_response, save_excel = True, save_path = 'D:/FinPy-TSE Data/Price Panel/'):
+def __build_price_panel_seg__(df_response, param, save_excel = True, save_path = 'D:/FinPy-TSE Data/Price Panel/'):
     # remove empty responses:
     df_response = df_response[df_response['price']!='']
     # drop duplicate indexes (repetitive indexes)
@@ -2163,7 +2173,7 @@ def __build_price_panel_seg__(df_response, save_excel = True, save_path = 'D:/Fi
                 pass
         # separate required column for price panel: Adj Final
         df_panel_temp = df_history.reset_index().set_index('Date')
-        df_panel_temp = df_panel_temp[['Adj Final']]
+        df_panel_temp = df_panel_temp[[param]]
         df_panel_temp.columns = [row['Ticker'].strip()]
         try:
             df_panel = pd.concat([df_panel,df_panel_temp],axis=1)
@@ -2171,7 +2181,10 @@ def __build_price_panel_seg__(df_response, save_excel = True, save_path = 'D:/Fi
             df_panel = df_panel_temp.copy()
     return df_panel
 
-def Build_PricePanel(stock_list, jalali_date = True, save_excel = True, save_path = 'D:/FinPy-TSE Data/Price Panel/'):
+def Build_PricePanel(stock_list, param = 'Adj Final', jalali_date = True, save_excel = True, save_path = 'D:/FinPy-TSE Data/Price Panel/'):
+    if(param not in ['Final','Adj Final']):
+        print('Invalid Input Error for "param": Valid inputs are "Final" and "Adj Final"')
+        return
     segment_size = 25
     # check save path:
     if(save_excel):
@@ -2205,9 +2218,9 @@ def Build_PricePanel(stock_list, jalali_date = True, save_excel = True, save_pat
             print('Reading Data : ', f'{round((i+1)/no_segments*100,1)} %', '   Processing Data : ', f'{round((i)/no_segments*100,1)} %')
         # process the data:
         if(i==0):
-            df_panel = __build_price_panel_seg__(df_response=text_resp, save_excel = save_excel, save_path = save_path)
+            df_panel = __build_price_panel_seg__(df_response=text_resp, param = param, save_excel = save_excel, save_path = save_path)
         else:
-            df_panel = pd.concat([df_panel,__build_price_panel_seg__(df_response=text_resp, save_excel = save_excel, save_path = save_path)],axis=1)
+            df_panel = pd.concat([df_panel,__build_price_panel_seg__(df_response=text_resp, param = param,save_excel = save_excel, save_path = save_path)],axis=1)
         clear_output(wait=True)
         if(save_excel):
             print('Reading Data : ', f'{round((i+1)/no_segments*100,1)} %', '   Processing and Saving Data : ', f'{round((i+1)/no_segments*100,1)} %')
@@ -2230,4 +2243,4 @@ def Build_PricePanel(stock_list, jalali_date = True, save_excel = True, save_pat
     # final messages to user: time of running:
     end_time = time.time()
     print(str(int(round(end_time-start_time,0)))+ ' Seconds Took to Gather and Process Your Requested Data')
-    return df_panel     
+    return df_panel
