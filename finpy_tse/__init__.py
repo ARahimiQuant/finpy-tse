@@ -16,6 +16,7 @@ import datetime
 import jdatetime
 import calendar
 import time
+import re
 
 from persiantools import characters
 from IPython.display import clear_output
@@ -49,23 +50,25 @@ def __Get_TSE_WebID__(stock):
         for i in page.text.split(';') :
             try :
                 i = i.split(',')
-                data.append([i[0],i[1],i[2],i[7]])
+                data.append([i[0],i[1],i[2],i[7],i[-1]])
             except :
                 pass
-        data = pd.DataFrame(data, columns=['Ticker','Name','WEB-ID','Active'])
+        data = pd.DataFrame(data, columns=['Ticker','Name','WEB-ID','Active','Market'])
         data['Name'] = data['Name'].apply(lambda x : characters.ar_to_fa(' '.join([i.strip() for i in x.split('\u200c')]).strip()))
         data['Ticker'] = data['Ticker'].apply(lambda x : characters.ar_to_fa(''.join(x.split('\u200c')).strip()))
         data['Name-Split'] = data['Name'].apply(lambda x : ''.join(x.split()).strip())
         data['Symbol-Split'] = data['Ticker'].apply(lambda x : ''.join(x.split()).strip())
         data['Active'] = pd.to_numeric(data['Active'])
         data = data.sort_values('Ticker')
-        data = pd.DataFrame(data[['Name','WEB-ID','Name-Split','Symbol-Split']].values, columns=['Name','WEB-ID',
-                            'Name-Split','Symbol-Split'], index=pd.MultiIndex.from_frame(data[['Ticker','Active']]))
+        data = pd.DataFrame(data[['Name','WEB-ID','Name-Split','Symbol-Split','Market']].values, columns=['Name','WEB-ID',
+                            'Name-Split','Symbol-Split','Market'], index=pd.MultiIndex.from_frame(data[['Ticker','Active']]))
         return data
     #---------------------------------------------------------------------------------------------------------------------------------
     if type(stock) != str:
         print('Please Enetr a Valid Ticker or Name!')
         return False
+    if(stock=='آ س پ'):
+        stock = 'آ.س.پ'
     # cleaning input search key
     stock = characters.ar_to_fa(''.join(stock.split('\u200c')).strip())
     first_name = stock.split()[0]
@@ -76,6 +79,10 @@ def __Get_TSE_WebID__(stock):
     df_name = data[data['Name-Split'] == stock]
     if len(df_symbol) > 0 :
         df_symbol = df_symbol.sort_index(level=1,ascending=False).drop(['Name-Split','Symbol-Split'], axis=1)
+        df_symbol['Market'] = df_symbol['Market'].apply(lambda x: re.sub('[0-9]', '', x))
+        df_symbol['Market'] = df_symbol['Market'].map({'N':'بورس', 'Z':'فرابورس', 'D':'فرابورس', 'A':'پایه زرد', 'P':'پایه زرد', 'C':'پایه نارنجی', 'L':'پایه قرمز',
+                                                       'W':'کوچک و متوسط فرابورس', 'V':'کوچک و متوسط فرابورس',})
+        df_symbol['Market'] = df_symbol['Market'].fillna('نامعلوم')
         return df_symbol
     elif len(df_name) > 0 :
         symbol = df_name.index[0][0]
@@ -84,6 +91,10 @@ def __Get_TSE_WebID__(stock):
         df_symbol = data[data.index.get_level_values('Ticker') == symbol]
         if len(df_symbol) > 0 :
             df_symbol = df_symbol.sort_index(level=1,ascending=False).drop(['Name-Split','Symbol-Split'], axis=1)
+            df_symbol['Market'] = df_symbol['Market'].apply(lambda x: re.sub('[0-9]', '', x))
+            df_symbol['Market'] = df_symbol['Market'].map({'N':'بورس', 'Z':'فرابورس', 'D':'فرابورس', 'A':'پایه زرد', 'P':'پایه زرد', 'C':'پایه نارنجی', 'L':'پایه قرمز',
+                                                           'W':'کوچک و متوسط فرابورس', 'V':'کوچک و متوسط فرابورس',})
+            df_symbol['Market'] = df_symbol['Market'].fillna('نامعلوم')
             return df_symbol
     print('Please Enetr a Valid Ticker or Name!')
     return False
@@ -158,7 +169,7 @@ def Get_Price_History(stock = 'خودرو', start_date = '1400-01-01', end_date=
         df_history['Date']=pd.to_datetime(df_history['Date'])
         df_history['Ticker'] = ticker
         df_history['Name'] = name
-        df_history['Part'] = data_part
+        df_history['Market'] = data_part
         df_history = df_history.set_index('Date')
         return df_history
     # ----------------------------------------------------------------------------------------------------------------------------------
@@ -181,11 +192,11 @@ def Get_Price_History(stock = 'خودرو', start_date = '1400-01-01', end_date=
     if(type(ticker_no_df)==bool):
         return
     # create an empty dataframe:
-    df_history = pd.DataFrame({},columns=['Date','High','Low','Final','Close','Open','Y-Final','Value','Volume','No','Ticker','Name','Part']).set_index('Date')
+    df_history = pd.DataFrame({},columns=['Date','High','Low','Final','Close','Open','Y-Final','Value','Volume','No','Ticker','Name','Market']).set_index('Date')
     # loop to get data from different pages of a ticker:
     for index, row in (ticker_no_df.reset_index()).iterrows():
         try:
-            df_temp = get_price_data(ticker_no = row['WEB-ID'],ticker = row['Ticker'],name = row['Name'],data_part = index+1)
+            df_temp = get_price_data(ticker_no = row['WEB-ID'],ticker = row['Ticker'],name = row['Name'],data_part = row['Market'])
             df_history = pd.concat([df_history,df_temp])
         except:
             pass
@@ -198,8 +209,8 @@ def Get_Price_History(stock = 'خودرو', start_date = '1400-01-01', end_date=
     df_history['J-Date']=df_history['Date'].apply(lambda x: str(jdatetime.date.fromgregorian(date=x.date())))
     df_history = df_history.set_index('J-Date')
     # rearrange columns:
-    df_history=df_history[['Date','Weekday','Y-Final','Open','High','Low','Close','Final','Volume','Value','No','Ticker','Name','Part']]
-    cols = ['Y-Final','Open','High','Low','Close','Final','Volume','No','Value','Part']
+    df_history=df_history[['Date','Weekday','Y-Final','Open','High','Low','Close','Final','Volume','Value','No','Ticker','Name','Market']]
+    cols = ['Y-Final','Open','High','Low','Close','Final','Volume','No','Value']
     df_history[cols] = df_history[cols].apply(pd.to_numeric, axis=1)
     #----------------------------------------------------------------------------------------------------------------------
     # Y-Final for new part of data could be 0 or 1000, we need to replace them with yesterday's final price:
@@ -255,7 +266,7 @@ def Get_RI_History(stock = 'خودرو', start_date = '1400-01-01', end_date='14
         df_RI_tab['Date']=pd.to_datetime(df_RI_tab['Date'])
         df_RI_tab['Ticker'] = ticker
         df_RI_tab['Name'] = name
-        df_RI_tab['Part'] = data_part
+        df_RI_tab['Market'] = data_part
         df_RI_tab = df_RI_tab.set_index('Date')
         return df_RI_tab
     # check date validity --------------------------------------------------------------------------------------------------------------
@@ -278,11 +289,11 @@ def Get_RI_History(stock = 'خودرو', start_date = '1400-01-01', end_date='14
         return
     # create an empty dataframe:   
     df_RI_tab = pd.DataFrame({},columns=['Date','No_Buy_R','No_Buy_I','No_Sell_R','No_Sell_I','Vol_Buy_R','Vol_Buy_I','Vol_Sell_R',
-                                         'Vol_Sell_I','Val_Buy_R','Val_Buy_I','Val_Sell_R','Val_Sell_I','Ticker','Name','Part']).set_index('Date')
+                                         'Vol_Sell_I','Val_Buy_R','Val_Buy_I','Val_Sell_R','Val_Sell_I','Ticker','Name','Market']).set_index('Date')
     # loop to get data from different pages of a ticker:
     for index, row in (ticker_no_df.reset_index()).iterrows():
         try:
-            df_temp = get_ri_data(ticker_no = row['WEB-ID'],ticker = row['Ticker'],name = row['Name'],data_part = index+1)
+            df_temp = get_ri_data(ticker_no = row['WEB-ID'],ticker = row['Ticker'],name = row['Name'],data_part = row['Market'])
             df_RI_tab = pd.concat([df_RI_tab,df_temp])
         except:
             pass
@@ -297,7 +308,7 @@ def Get_RI_History(stock = 'خودرو', start_date = '1400-01-01', end_date='14
     df_RI_tab = df_RI_tab.set_index('J-Date')
     # rearrange columns:
     df_RI_tab=df_RI_tab[['Date','Weekday','No_Buy_R','No_Buy_I','No_Sell_R','No_Sell_I','Vol_Buy_R','Vol_Buy_I','Vol_Sell_R','Vol_Sell_I',
-                         'Val_Buy_R','Val_Buy_I','Val_Sell_R','Val_Sell_I','Ticker','Name','Part']]
+                         'Val_Buy_R','Val_Buy_I','Val_Sell_R','Val_Sell_I','Ticker','Name','Market']]
     cols = ['No_Buy_R','No_Buy_I','No_Sell_R','No_Sell_I','Vol_Buy_R','Vol_Buy_I','Vol_Sell_R','Vol_Sell_I','Val_Buy_R','Val_Buy_I','Val_Sell_R','Val_Sell_I']
     df_RI_tab[cols] = df_RI_tab[cols].apply(pd.to_numeric, axis=1)
     if(not show_weekday):
@@ -582,24 +593,54 @@ def Get_USD_RIAL(start_date = '1395-01-01', end_date='1400-12-29', ignore_date =
     #---------------------------------------------------------------------------------------------------------------------------------------
     r = requests.get('https://platform.tgju.org/fa/tvdata/history?symbol=PRICE_DOLLAR_RL&resolution=1D', headers=headers)
     df_data = r.json()
-    df_data = pd.DataFrame({'Date':df_data['t'],'Open':df_data['o'],'High':df_data['h'],'Low':df_data['l'],'Close':df_data['c'],})
-    df_data['Date'] = df_data['Date'].apply(lambda x: datetime.datetime.fromtimestamp(x))
-    df_data = df_data.set_index('Date')
-    df_data.index = df_data.index.to_period("D")
-    df_data.index=df_data.index.to_series().astype(str)
-    df_data = df_data.reset_index()
-    df_data['Date'] = pd.to_datetime(df_data['Date'])
-    df_data['Weekday']=df_data['Date'].dt.weekday
-    df_data['Weekday'] = df_data['Weekday'].apply(lambda x: calendar.day_name[x])
-    df_data['J-Date']=df_data['Date'].apply(lambda x: str(jdatetime.date.fromgregorian(date=x.date())))
-    df_data = df_data.set_index('J-Date')
-    df_data=df_data[['Date','Weekday','Open','High','Low','Close']]
-    if(not show_weekday):
-        df_data.drop(columns=['Weekday'],inplace=True)
-    if(not double_date):
-        df_data.drop(columns=['Date'],inplace=True)
-    if(not ignore_date):
-        df_data = df_data[start_date:end_date]
+    try:
+        df_data = pd.DataFrame({'Date':df_data['t'],'Open':df_data['o'],'High':df_data['h'],'Low':df_data['l'],'Close':df_data['c'],})
+        df_data['Date'] = df_data['Date'].apply(lambda x: datetime.datetime.fromtimestamp(x))
+        df_data = df_data.set_index('Date')
+        df_data.index = df_data.index.to_period("D")
+        df_data.index=df_data.index.to_series().astype(str)
+        df_data = df_data.reset_index()
+        df_data['Date'] = pd.to_datetime(df_data['Date'])
+        df_data['Weekday']=df_data['Date'].dt.weekday
+        df_data['Weekday'] = df_data['Weekday'].apply(lambda x: calendar.day_name[x])
+        df_data['J-Date']=df_data['Date'].apply(lambda x: str(jdatetime.date.fromgregorian(date=x.date())))
+        df_data = df_data.set_index('J-Date')
+        df_data=df_data[['Date','Weekday','Open','High','Low','Close']]
+        if(not show_weekday):
+            df_data.drop(columns=['Weekday'],inplace=True)
+        if(not double_date):
+            df_data.drop(columns=['Date'],inplace=True)
+        if(not ignore_date):
+            df_data = df_data[start_date:end_date]
+    except:
+        print('WARNING: USD/RIAL data is not up-to-date! Check the following links to find out what is going on!')
+        print('https://www.tgju.org/profile/price_dollar_rl/technical')
+        print('https://www.tgju.org/profile/price_dollar_rl/history')
+        url = 'https://api.accessban.com/v1/market/indicator/summary-table-data/price_dollar_rl' # get existing history
+        r = requests.get(url, headers=headers)
+        df_data = pd.DataFrame(r.json()['data'])
+        df_data.columns = ['Open','Low','High','Close','4','3','Date','7']
+        df_data = df_data[['Date','Open','High','Low','Close']]
+        df_data['Date'] = pd.to_datetime(df_data['Date'])
+        df_data['Weekday']=df_data['Date'].dt.weekday
+        df_data['Weekday'] = df_data['Weekday'].apply(lambda x: calendar.day_name[x])
+        df_data['J-Date']=df_data['Date'].apply(lambda x: str(jdatetime.date.fromgregorian(date=x.date())))
+        df_data = df_data.set_index('J-Date')
+        df_data=df_data[['Date','Weekday','Open','High','Low','Close']]
+        cols = ['Open','High','Low','Close']
+        df_data['Open'] = df_data['Open'].apply(lambda x: x.replace(',',''))
+        df_data['High'] = df_data['High'].apply(lambda x: x.replace(',',''))
+        df_data['Low'] = df_data['Low'].apply(lambda x: x.replace(',',''))
+        df_data['Close'] = df_data['Close'].apply(lambda x: x.replace(',',''))
+        df_data[cols] = df_data[cols].apply(pd.to_numeric).astype('int64')
+        df_data = df_data[df_data['Open']!=0]
+        df_data = df_data.iloc[::-1]
+        if(not show_weekday):
+            df_data.drop(columns=['Weekday'],inplace=True)
+        if(not double_date):
+            df_data.drop(columns=['Date'],inplace=True)
+        if(not ignore_date):
+            df_data = df_data[start_date: end_date]
     return df_data
 
 ################################################################################################################################################################################
@@ -667,6 +708,7 @@ def Get_Queue_History(stock = 'وخارزم', start_date = '1400-09-15', end_dat
         df_history = df_history.set_index('Date')
         return df_history
     # check date validity --------------------------------------------------------------------------------------------------------------
+    failed_jdates = []
     start_date = __Check_JDate_Validity__(start_date,key_word="'START'")
     if(start_date==None):
         return
@@ -711,15 +753,17 @@ def Get_Queue_History(stock = 'وخارزم', start_date = '1400-09-15', end_dat
         df_bq_sq_val = pd.DataFrame(columns=['J-Date','Day_UL','Day_LL','Time','BQ_Value','SQ_Value','BQPC','SQPC']).set_index(['J-Date'])
         day_counter = 1
         for j_date in j_date_list:
-            df_bq_sq_val = pd.concat([df_bq_sq_val,__Get_Day_MarketClose_BQ_SQ__(ticker_no_list[day_counter-1], j_date)], axis=0)
+            try:
+                df_bq_sq_val = pd.concat([df_bq_sq_val,__Get_Day_MarketClose_BQ_SQ__(ticker_no_list[day_counter-1], j_date)], axis=0)
+            except:
+                failed_jdates.append(j_date)
             if(show_progress):
                 clear_output(wait=True)
                 print('Progress : ', f'{round((day_counter)/no_days*100,1)} %')
             day_counter+=1
-    df_bq_sq_val['Value'] = df_history['Value'].tolist()
-    df_bq_sq_val['Date'] = df_history['Date'].tolist()
-    df_bq_sq_val['Weekday'] = df_history['Weekday'].tolist()
-    df_bq_sq_val['Value'] = df_bq_sq_val['Value'].apply(pd.to_numeric).astype('int64')
+    df_bq_sq_val = pd.concat([df_bq_sq_val, df_history[['Value','Date','Weekday']]], axis=1, join="inner") 
+    cols = ['Day_UL','Day_LL','Value','BQ_Value','SQ_Value','BQPC','SQPC']
+    df_bq_sq_val[cols] = df_bq_sq_val[cols].apply(pd.to_numeric).astype('int64')
     # re-arrange columns order:
     df_bq_sq_val = df_bq_sq_val[['Date','Weekday','Day_UL','Day_LL','Value','Time','BQ_Value','SQ_Value','BQPC','SQPC']]
     if(not show_per_capita):
@@ -728,6 +772,10 @@ def Get_Queue_History(stock = 'وخارزم', start_date = '1400-09-15', end_dat
         df_bq_sq_val.drop(columns=['Weekday'],inplace=True)
     if(not double_date):
         df_bq_sq_val.drop(columns=['Date'],inplace=True)
+    # warning for failed dates:
+    if(len(failed_jdates)!=0):
+        print('WARNING: The following days data is not available on TSE website, even if those are trading days!')
+        print(failed_jdates)
     return df_bq_sq_val
 
 ################################################################################################################################################################################
@@ -782,6 +830,7 @@ def Get_IntradayOB_History(stock = 'کرمان', start_date = '1400-08-01', end_
         df_history = df_history.set_index('Date')
         return df_history
     # check date validity --------------------------------------------------------------------------------------------------------------
+    failed_jdates = []
     start_date = __Check_JDate_Validity__(start_date,key_word="'START'")
     if(start_date==None):
         return
@@ -825,7 +874,10 @@ def Get_IntradayOB_History(stock = 'کرمان', start_date = '1400-08-01', end_
                                        'Day_LL','Day_UL','Date']).set_index(['J-Date','Time','Depth'])
         day_counter = 1
         for j_date in j_date_list:
-            df_lob = pd.concat([df_lob,__Get_Day_LOB__(ticker_no_list[day_counter-1], j_date)], axis=0)
+            try:
+                df_lob = pd.concat([df_lob,__Get_Day_LOB__(ticker_no_list[day_counter-1], j_date)], axis=0)
+            except:
+                failed_jdates.append(j_date)
             if(show_progress):
                 clear_output(wait=True)
                 print('Progress : ', f'{round((day_counter)/no_days*100,1)} %')
@@ -850,6 +902,9 @@ def Get_IntradayOB_History(stock = 'کرمان', start_date = '1400-08-01', end_
             df_lob = df_lob.reset_index()
             df_lob.drop(columns=['J-Date'],inplace=True)
             df_lob = df_lob.set_index(['Date','Time','Depth'])
+    if(len(failed_jdates)!=0):
+        print('WARNING: The following days data is not available on TSE website, even if those are trading days!')
+        print(failed_jdates)
     return df_lob
 
 ################################################################################################################################################################################
@@ -1737,6 +1792,7 @@ def Build_Market_StockList(bourse = True, farabourse = True, payeh = True, detai
             print('Searching Payeh market stocks web-pages ...')
         # rearrange columns
         look_up['Ticker'] = look_up['Ticker'].apply(lambda x: (str(x).replace('ي','ی')).replace('ك','ک'))
+        look_up['Ticker'] = look_up['Ticker'].apply(lambda x: x.replace('\u200c',' '))
         look_up['Name'] = look_up['Name'].apply(lambda x: (str(x).replace('ي','ی')).replace('ك','ک'))
         look_up['Name'] = look_up['Name'].apply(lambda x: x.replace('\u200c',' '))
         look_up = look_up.set_index('Ticker')
@@ -1784,14 +1840,14 @@ def Build_Market_StockList(bourse = True, farabourse = True, payeh = True, detai
             look_up = pd.concat([look_up[look_up['WEB-ID'].notnull()],payeh_lookup])
             look_up['Name'] = look_up['Name'].apply(lambda x: characters.ar_to_fa(x))
         # read stocks IDs from TSE webpages:
-        def get_data_optimaize():
+        def get_data_optimaize(codes):
             tracemalloc.start()
             @unsync
-            async def get_data_parallel():
+            async def get_data_parallel(codes):
                 counter = 1
                 async with aiohttp.ClientSession() as session:
                     tasks = []
-                    for code in look_up['WEB-ID'].to_list():
+                    for code in codes:
                         task = asyncio.ensure_future(get_session(session, code))
                         tasks.append(task)
                     view_counts = await asyncio.gather(*tasks)
@@ -1805,26 +1861,46 @@ def Build_Market_StockList(bourse = True, farabourse = True, payeh = True, detai
             async def get_session(session, code):
                 url = f'http://www.tsetmc.com/Loader.aspx?Partree=15131M&i={code}'
                 async with session.get(url, headers=headers) as response:
-                    data_text = await response.text()
-                    soup = BeautifulSoup(data_text, 'html.parser')
-                    table = soup.findAll("table", {"class": "table1"})
-                    df_id = pd.read_html(str(table[0]))[0]
-                    # rotate data frame:
-                    df_id = df_id.T
-                    df_id.columns = df_id.iloc[0]
-                    df_id = df_id[1:]
-                    df_current_stock = look_up[look_up['WEB-ID'] == code]
-                    df_id['Ticker'] = df_current_stock.index[0]
-                    df_id['Market'] = df_current_stock['Market'][0]
-                    df_id['WEB-ID'] = df_current_stock['WEB-ID'][0]
-                    return df_id
+                    try:
+                        data_text = await response.text()
+                        soup = BeautifulSoup(data_text, 'html.parser')
+                        table = soup.findAll("table", {"class": "table1"})
+                        df_id = pd.read_html(str(table[0]))[0]
+                        # rotate data frame:
+                        df_id = df_id.T
+                        df_id.columns = df_id.iloc[0]
+                        df_id = df_id[1:]
+                        df_current_stock = look_up[look_up['WEB-ID'] == code]
+                        df_id['Ticker'] = df_current_stock.index[0]
+                        df_id['Market'] = df_current_stock['Market'][0]
+                        df_id['WEB-ID'] = df_current_stock['WEB-ID'][0]
+                        return df_id
+                    except:
+                        failed_tickers_code.append(code)
+                        return pd.DataFrame()
                 return 
-            return get_data_parallel().result()
+            return get_data_parallel(codes).result()
+        
         no_stocks = len(look_up)
         if(show_progress):
             clear_output(wait=True)
-            print(f'Be patient! Gathering detailed data of {no_stocks} stocks ...')
-        df_final = get_data_optimaize()
+            print(f'Gathering detailed data for {no_stocks} stocks ...')
+            
+        # gathering detailed data:
+        continue_loop = True
+        df_final = pd.DataFrame()
+        web_id_list = look_up['WEB-ID'].to_list()
+        failed_tickers_code = []
+        while(continue_loop):
+            df_temp = get_data_optimaize(codes = web_id_list)
+            if(len(failed_tickers_code)>0):  # failed tickers
+                web_id_list = failed_tickers_code
+                failed_tickers_code = []
+                df_final = pd.concat([df_final, df_temp])
+            else:
+                df_final = pd.concat([df_final, df_temp])
+                continue_loop = False
+                
         df_final.columns=['Ticker(12)','Ticker(5)','Name(EN)','Ticker(4)','Name','Comment','Ticker(30)','Company Code(12)',
                           'Panel','Panel Code', 'Sector Code','Sector','Sub-Sector Code','Sub-Sector','Ticker','Market','WEB-ID']
         df_final['Comment'] = df_final['Comment'].apply(lambda x: x.split('-')[1] if(len(x.split('-'))>1) else '-')
@@ -1836,10 +1912,11 @@ def Build_Market_StockList(bourse = True, farabourse = True, payeh = True, detai
         df_final['Panel']=df_final['Panel'].apply(lambda x: (str(x).replace('ي','ی')).replace('ك','ک'))
         df_final['Sector']=df_final['Sector'].apply(lambda x: (str(x).replace('ي','ی')).replace('ك','ک'))
         df_final['Sub-Sector']=df_final['Sub-Sector'].apply(lambda x: (str(x).replace('ي','ی')).replace('ك','ک'))
-        df_final['Name'] = df_final['Name'].apply(lambda x: x.replace('\u200c',' '))
-        df_final['Panel'] = df_final['Panel'].apply(lambda x: x.replace('\u200c',' '))
-        df_final['Sector'] = df_final['Sector'].apply(lambda x: x.replace('\u200c',' '))
-        df_final['Sub-Sector'] = df_final['Sub-Sector'].apply(lambda x: x.replace('\u200c',' '))
+        df_final['Ticker']=df_final['Ticker'].apply(lambda x: (x.replace('\u200c',' ')).strip())
+        df_final['Name'] = df_final['Name'].apply(lambda x: (x.replace('\u200c',' ')).strip())
+        df_final['Panel'] = df_final['Panel'].apply(lambda x: (x.replace('\u200c',' ')).strip())
+        df_final['Sector'] = df_final['Sector'].apply(lambda x: (x.replace('\u200c',' ')).strip())
+        df_final['Sub-Sector'] = df_final['Sub-Sector'].apply(lambda x: (x.replace('\u200c',' ')).strip())
 
         df_final = df_final.set_index('Ticker')
         df_final.drop(columns=['WEB-ID'],inplace=True)
@@ -2243,4 +2320,196 @@ def Build_PricePanel(stock_list, param = 'Adj Final', jalali_date = True, save_e
     # final messages to user: time of running:
     end_time = time.time()
     print(str(int(round(end_time-start_time,0)))+ ' Seconds Took to Gather and Process Your Requested Data')
-    return df_panel
+    return df_panel  
+
+################################################################################################################################################################################
+################################################################################################################################################################################
+
+def Get_60D_PriceHistory(stock_list, adjust_price = True, show_progress = True, save_excel = False, save_path = 'D:/FinPy-TSE Data/MarketWatch'):
+    # read stocks IDs from TSE webpages:
+    def get_data_optimaize(codes):
+        tracemalloc.start()
+        @unsync
+        async def get_data_parallel(codes):
+            counter = 1
+            async with aiohttp.ClientSession() as session:
+                tasks = []
+                for code in codes:
+                    task = asyncio.ensure_future(get_session(session, code))
+                    tasks.append(task)
+                view_counts = await asyncio.gather(*tasks)
+                for i in view_counts :
+                    if (counter==1):
+                        df_final = i.copy()
+                    else:
+                        df_final = pd.concat([df_final,i])
+                    counter+=1
+            return df_final
+        async def get_session(session, code):
+            url = f'http://www.tsetmc.com/Loader.aspx?Partree=15131M&i={code}'
+            async with session.get(url, headers=headers) as response:
+                try:
+                    data_text = await response.text()
+                    soup = BeautifulSoup(data_text, 'html.parser')
+                    table = soup.findAll("table", {"class": "table1"})
+                    df_id = pd.read_html(str(table[0]))[0]
+                    ticker = (df_id.iloc[5,1].split('-')[0]).strip()
+                    df_id = pd.DataFrame({'WEB-ID':[code], 'Ticker':[ticker]})
+                    return df_id
+                except:
+                    failed_tickers_code.append(code)
+                    return pd.DataFrame()
+            return 
+        return get_data_parallel(codes).result()
+    #---------------------------------------------------------------------------------
+    start_time = time.time()
+    if(show_progress):
+        clear_output(wait=True)
+        print(f'STEP 1/4: Gathering historical price data of last 60 trading days ...')
+    # send request:
+    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
+    r = requests.get('http://members.tsetmc.com/tsev2/data/ClosingPriceAll.aspx', headers=headers)
+
+    # clean the data:
+    hist_60_days = pd.DataFrame(r.text.split(';'))
+    hist_60_days.columns = ['Data']
+    hist_60_days['WEB-ID'] = hist_60_days['Data'].apply(lambda x: x.split(',')[0] if(x.count(',')==10) else None)
+    hist_60_days['Data'] = hist_60_days['Data'].apply(lambda x: x.replace(x.split(',')[0]+',','') if(x.count(',')==10) else x)
+    temp_data_df = hist_60_days['Data'].str.split(",",expand=True)
+    cols = ['n','Final','Close','No','Volume','Value','Low','High','Y-Final','Open']
+    temp_data_df.columns = cols
+    temp_data_df = temp_data_df[['n','Y-Final','Open','High','Low','Close','Final','Volume','Value','No']]
+
+    # concat and fill 'None' web ids
+    hist_60_days = pd.concat([hist_60_days[['WEB-ID']],temp_data_df], axis=1)
+    hist_60_days['WEB-ID'] = hist_60_days['WEB-ID'].fillna(method='ffill')
+    hist_60_days = hist_60_days.apply(pd.to_numeric)
+    hist_60_days = hist_60_days.sort_values(by=['n','WEB-ID'], ascending=[True,True])
+
+    # find trading days j-dates and join:
+    if(show_progress):
+        clear_output(wait=True)
+        print(f'STEP 2/4: Adding J-date to the historical data ...')
+    r_trading_days = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i=32097828799138957&t=value', headers=headers)
+    df_trading_days = pd.DataFrame(r_trading_days.text.split(';'))
+    df_trading_days[['J-Date','Adj Close']] = df_trading_days[0].str.split(",",expand=True)
+    df_trading_days['J-Date'] = df_trading_days['J-Date'].apply(lambda x: str(jdatetime.date(int(x.split('/')[0]),int(x.split('/')[1]),int(x.split('/')[2]))))
+    df_trading_days = df_trading_days.set_index('J-Date')[::-1].reset_index()[['J-Date']]
+    df_trading_days = df_trading_days[:60]
+    df_trading_days.index.name = 'n'
+    df_trading_days = df_trading_days.reset_index()
+    hist_60_days = pd.merge(hist_60_days, df_trading_days, on='n')
+
+    if(show_progress):
+        clear_output(wait=True)
+        print(f'STEP 3/4: Adding ticker names from market watch ...')
+    # adding ticker names:
+    r = requests.get('http://www.tsetmc.com/tsev2/data/MarketWatchPlus.aspx', headers=headers)
+    main_text = r.text
+    Mkt_df = pd.DataFrame((main_text.split('@')[2]).split(';'))
+    Mkt_df = Mkt_df[0].str.split(",",expand=True)
+    Mkt_df.columns = ['WEB-ID','Ticker-Code','Ticker','Name','Time','Open','Final','Close','No','Volume','Value',
+                      'Low','High','Y-Final','EPS','Base-Vol','Unknown1','Unknown2','Sector','Day_UL','Day_LL','Share-No','Mkt-ID']
+    Mkt_df = Mkt_df[['WEB-ID','Ticker']]
+    Mkt_df['Ticker'] = Mkt_df['Ticker'].apply(lambda x: (str(x).replace('ي','ی')).replace('ك','ک'))
+    Mkt_df['WEB-ID'] = Mkt_df['WEB-ID'].apply(lambda x: int(x.strip()))
+
+    # re-arrange columns and drop non-trading days:
+    hist_60_days = hist_60_days[hist_60_days['Volume'] != 0]
+    hist_60_days = pd.merge(hist_60_days, Mkt_df, on='WEB-ID', how="left")
+
+    #------------------------------------------------------------------------------------------------------------------------------------------
+    if(show_progress):
+        clear_output(wait=True)
+        print(f'STEP 4/4: Finding and adding ticker names that are not available in the market watch ...')
+    # find web-ids with unknown ticker:
+    missing_df = hist_60_days[hist_60_days['Ticker'].isnull()]
+    missing_df = missing_df.iloc[:,:-1]
+    accepted_df = hist_60_days[~hist_60_days['Ticker'].isnull()]
+
+    # gathering detailed data:
+    continue_loop = True
+    df_final = pd.DataFrame()
+    missing_webids = missing_df['WEB-ID'].unique().tolist()
+    failed_tickers_code = []
+    while(continue_loop):
+        df_temp = get_data_optimaize(codes = missing_webids)
+        if(len(failed_tickers_code)>0):  # failed tickers
+            missing_webids = failed_tickers_code
+            failed_tickers_code = []
+            df_final = pd.concat([df_final, df_temp])
+        else:
+            df_final = pd.concat([df_final, df_temp])
+            continue_loop = False
+    df_final['Ticker'] = df_final['Ticker'].apply(lambda x: (str(x).replace('ي','ی')).replace('ك','ک'))
+    df_final['Ticker'] = df_final['Ticker'].apply(lambda x: (x.split('-')[0]).strip())
+
+    # filter and concat:
+    missing_df = pd.merge(missing_df, df_final, on='WEB-ID', how="left")
+    hist_60_days = pd.concat([accepted_df, missing_df])
+    hist_60_days = hist_60_days.sort_values(by = ['Ticker', 'J-Date'], ascending = [True, True])
+    hist_60_days.drop(columns=['WEB-ID','n'],inplace=True)
+    hist_60_days.set_index(['Ticker','J-Date'], inplace=True) 
+    
+    # filter-out requested stocks:
+    stock_list_60D = hist_60_days.index.get_level_values('Ticker').unique().tolist()
+    missing_stocks_list = [stock for stock in stock_list if(stock not in stock_list_60D)]  # report this
+    available_stocks_list = [stock for stock in stock_list if(stock in stock_list_60D)]
+    hist_60_days = hist_60_days.loc[available_stocks_list]
+    adj_info_df = pd.DataFrame() 
+    
+    if(adjust_price):
+        if(show_progress):
+            clear_output(wait=True)
+            print('Data Gathering Progress: 100%,  Adjusting Prices ...')
+        # adjust price:
+        market_changed_tickers = []
+        df_adjusted_60D_requested = pd.DataFrame()
+
+        for ticker in available_stocks_list:
+            # separate ticker data and start adjusting:
+            ticker_60D_hist_df = hist_60_days.loc[ticker].copy()
+            if((ticker_60D_hist_df['Y-Final'][0] == 0)or(ticker_60D_hist_df['Y-Final'][0] == 100)):
+                # if zero or 100 price happens at the begining of the data, the ticker might be changed its market!
+                market_changed_tickers.append(ticker)
+            else: 
+                # adjust the price   
+                ticker_60D_hist_df['COEF'] = (ticker_60D_hist_df['Y-Final'].shift(-1)/ticker_60D_hist_df['Final']).fillna(1.0)
+                ticker_60D_hist_df['ADJ-COEF']=ticker_60D_hist_df.iloc[::-1]['COEF'].cumprod().iloc[::-1]
+                ticker_60D_hist_df['Adj Open'] = (ticker_60D_hist_df['Open']*ticker_60D_hist_df['ADJ-COEF']).apply(lambda x: int(x))
+                ticker_60D_hist_df['Adj High'] = (ticker_60D_hist_df['High']*ticker_60D_hist_df['ADJ-COEF']).apply(lambda x: int(x))
+                ticker_60D_hist_df['Adj Low'] = (ticker_60D_hist_df['Low']*ticker_60D_hist_df['ADJ-COEF']).apply(lambda x: int(x))
+                ticker_60D_hist_df['Adj Close'] = (ticker_60D_hist_df['Close']*ticker_60D_hist_df['ADJ-COEF']).apply(lambda x: int(x))
+                ticker_60D_hist_df['Adj Final'] = (ticker_60D_hist_df['Final']*ticker_60D_hist_df['ADJ-COEF']).apply(lambda x: int(x))
+                ticker_adj_coeff = ticker_60D_hist_df['ADJ-COEF'][0]
+                ticker_adj_jdate = ticker_60D_hist_df.index[0]
+                ticker_60D_hist_df.drop(columns=['Y-Final','COEF','ADJ-COEF'],inplace=True)
+                ticker_60D_hist_df['Ticker'] = ticker
+                ticker_60D_hist_df = ticker_60D_hist_df.reset_index().set_index(['Ticker','J-Date'])
+                df_adjusted_60D_requested = pd.concat([df_adjusted_60D_requested, ticker_60D_hist_df])
+                # saving adjust data for preceding days:
+                ticker_adj_info_df = pd.DataFrame({'Ticker':[ticker], 'ADJ-JDate':[ticker_adj_jdate], 'ADJ-Coef':[ticker_adj_coeff]})
+                adj_info_df = pd.concat([adj_info_df,ticker_adj_info_df])
+        # clean the adjust info df:
+        adj_info_df = adj_info_df[adj_info_df['ADJ-Coef'] != 1.0]
+        adj_info_df.set_index('Ticker', inplace=True)
+        missing_stocks_list.extend(market_changed_tickers)
+        hist_60_days = df_adjusted_60D_requested.copy()
+            
+    end_time = time.time()
+    if(show_progress):
+        clear_output(wait=True)
+        print('Progress : 100 % , Done in ' + str(int(round(end_time - start_time,0)))+' seconds!')
+    
+    if(save_excel):
+        # modify save path if necessary:
+        if(save_path[-1] != '/'):
+            save_path = save_path+'/'
+        today_j_date = jdatetime.datetime.now().strftime("%Y-%m-%d")
+        name = today_j_date+' 60D_History.xlsx'
+        try:
+            hist_60_days.to_excel(save_path+name)
+            print('File saved in the specificed directory as: ',name)
+        except:
+            print('Save path does not exist, you can handle saving this data by returned dataframe as Excel using ".to_excel()", if you will!')
+    return hist_60_days, adj_info_df, missing_stocks_list
