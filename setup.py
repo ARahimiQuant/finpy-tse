@@ -8,8 +8,8 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setuptools.setup(
     name='finpy_tse',                           # should match the package folder
     packages=['finpy_tse'],                     # should match the package folder
-    version='1.0.1',                                # important for updates
-    license='MIT',                                  # should match your chosen license
+    version='1.1.0',                                # important for updates
+    license='GPL-3.0',                                  # should match your chosen license
     description='A Python Module to Access Tehran Stock Exchange Historical and Real-Time Data',
     long_description=long_description,              # loads your README.md
     long_description_content_type="text/markdown",  # README.md is of type 'markdown'
