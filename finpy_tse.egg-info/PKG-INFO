@@ -1,11 +1,11 @@
 Metadata-Version: 2.1
 Name: finpy-tse
-Version: 1.0.1
+Version: 1.1.0
 Summary: A Python Module to Access Tehran Stock Exchange Historical and Real-Time Data
 Home-page: UNKNOWN
-Author: ALI RAHIMI  AND  RASOOL GHAFOURI
+Author: ALI RAHIMI  AND  RASOOL GHAFOURI AND TAHA SHIRAZI
 Author-email: a.rahimi.aut@gmail.com
-License: MIT
+License: BSD 3-Clause
 Platform: UNKNOWN
 Description-Content-Type: text/markdown
 License-File: LICENSE.txt
