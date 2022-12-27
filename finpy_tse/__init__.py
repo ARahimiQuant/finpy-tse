@@ -2408,6 +2408,7 @@ def Get_60D_PriceHistory(stock_list, adjust_price = True, show_progress = True, 
     main_text = r.text
     Mkt_df = pd.DataFrame((main_text.split('@')[2]).split(';'))
     Mkt_df = Mkt_df[0].str.split(",",expand=True)
+    Mkt_df = Mkt_df.iloc[:,:23]
     Mkt_df.columns = ['WEB-ID','Ticker-Code','Ticker','Name','Time','Open','Final','Close','No','Volume','Value',
                       'Low','High','Y-Final','EPS','Base-Vol','Unknown1','Unknown2','Sector','Day_UL','Day_LL','Share-No','Mkt-ID']
     Mkt_df = Mkt_df[['WEB-ID','Ticker']]
