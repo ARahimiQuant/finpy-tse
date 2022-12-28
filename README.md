@@ -41,7 +41,7 @@
 </div>
 
 ```python
-pip install finpy_tse
+pip install finpy-tse
 ```
 
 
