@@ -158,13 +158,33 @@ def Get_Price_History(stock = 'خودرو', start_date = '1400-01-01', end_date=
     """
     # a function to get price data from a given page ----------------------------------------------------------------------------------
     def get_price_data(ticker_no,ticker,name, data_part):
-        r = requests.get(f'http://members.tsetmc.com/tsev2/data/InstTradeHistory.aspx?i={ticker_no}&Top=999999&A=0', headers=headers)
-        df_history=pd.DataFrame(r.text.split(';'))
-        columns=['Date','High','Low','Final','Close','Open','Y-Final','Value','Volume','No']
-        #split data into defined columns
-        df_history[columns] = df_history[0].str.split("@",expand=True)
-        # drop old column 0
-        df_history.drop(columns=[0],inplace=True)
+        r = requests.get(
+            url=f"http://www.tsetmc.com/tsev2/data/Export-txt.aspx?t=i&a=1&b=0&i={ticker_no}",
+            headers = headers,
+            timeout = 3
+        )
+        df_history=pd.DataFrame(
+            list(map(
+                lambda x : x.split(","),r.text.splitlines()[1:]
+            )),
+            columns=r.text.splitlines()[0].split(",")
+        )
+        df_history.rename(
+            columns={
+                "<DTYYYYMMDD>":"Date",
+                "<FIRST>":"Open",
+                "<HIGH>":"High",
+                "<LOW>":"Low",
+                "<LAST>":"Close",
+                "<OPENINT>":"No",
+                "<VALUE>":"Value",
+                "<VOL>":"Volume",
+                "<CLOSE>":"Final",
+                "<OPEN>":"Y-Final",
+            },
+            inplace=True
+        )
+        df_history.drop(columns=['<TICKER>','<PER>'],inplace=True)
         df_history.dropna(inplace=True)
         df_history['Date']=pd.to_datetime(df_history['Date'])
         df_history['Ticker'] = ticker
