@@ -480,7 +480,7 @@ def Get_IntradayTrades_History(stock = 'وخارزم', start_date = '1400-09-15'
     # a function to get price data from a given page ----------------------------------------------------------------------------------
     failed_jdates = []
     def get_price_data_forintraday(ticker_no):
-        r = requests.get(f'http://members.tsetmc.com/tsev2/data/InstTradeHistory.aspx?i={ticker_no}&Top=999999&A=0', headers=headers)
+        r = requests.get(f'http://www.tsetmc.com/tsev2/data/InstTradeHistory.aspx?i={ticker_no}&Top=999999&A=0', headers=headers)
         df_history=pd.DataFrame(r.text.split(';'))
         columns=['Date','High','Low','Final','Close','Open','Y-Final','Value','Volume','No']
         #split data into defined columns
