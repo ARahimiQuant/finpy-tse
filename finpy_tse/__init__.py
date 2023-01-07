@@ -2515,3 +2515,53 @@ def Get_60D_PriceHistory(stock_list, adjust_price = True, show_progress = True, 
         except:
             print('Save path does not exist, you can handle saving this data by returned dataframe as Excel using ".to_excel()", if you will!')
     return hist_60_days, adj_info_df, missing_stocks_list
+
+
+###########################################################################################################################################################
+###########################################################################################################################################################
+
+def Get_ShareHoldersInfo(ticker = 'خودرو'):
+    """
+    دریافت آخرین وضعیت سهامداران بالای 1% نماد مورد نظر 
+    """
+    # find web-ids 
+    ticker_no_df = __Get_TSE_WebID__(ticker)
+    if(type(ticker_no_df)==bool):
+        return
+    ticker_no_df.reset_index(inplace=True)
+    ticker_no_df = ticker_no_df[ticker_no_df['Active']==1]
+    wid = ticker_no_df['WEB-ID'].values[0]
+    market = ticker_no_df['Market'].values[0]
+
+    # get isin id
+    r = requests.get(f'http://www.tsetmc.com/Loader.aspx?Partree=15131M&i={wid}', headers=headers)
+    isin_id = pd.read_html(r.text)[0].iloc[7,1]
+
+    # get shareholders data
+    r = requests.get(f'http://www.tsetmc.com/Loader.aspx?Partree=15131T&c={isin_id}', headers=headers)
+    soup = BeautifulSoup(r.text, 'html.parser')
+    table = soup.findAll("table", {"class": "table1"})[0].findAll("tr", {"class": "sh"})
+
+    # extarct data and create dataframe
+    name_list = []
+    out_list = []
+    per_list = []
+    change_list = []
+
+    for i in range(len(table)):
+        name_list.append(table[i].findAll("td")[0].text)
+        out_list.append(table[i].findAll("td")[1].findAll('div')[0].attrs['title'])
+        per_list.append(table[i].findAll("td")[2].text)
+        change_list.append(table[i].findAll("td")[3].text)
+
+    df_sh = pd.DataFrame({'Name':name_list, 'ShareNo':out_list, 'SharePct':per_list, 'Changes':change_list})
+
+    # clean dataframe
+    df_sh['Name'] = df_sh['Name'].apply(lambda x:characters.ar_to_fa(x))
+    df_sh['ShareNo'] = df_sh['ShareNo'].apply(lambda x: int(x.replace(',','')))
+    df_sh['SharePct'] = df_sh['SharePct'].apply(lambda x: float(x))
+    df_sh['Changes'] = df_sh['Changes'].apply(lambda x: int(x.replace(',','')))
+    df_sh['Ticker'] = ticker
+    df_sh['Market'] = market
+    df_sh.set_index(['Ticker','Market','Name'], inplace=True)
+    return df_sh
