@@ -2114,7 +2114,7 @@ def __get_history_data_group_parallel__(stock_list) :
         async def parallel_request(list_code):
 
             async def get_data(session, code):
-                url = f'http://members.tsetmc.com/tsev2/data/InstTradeHistory.aspx?i={code}&Top=999999&A=0'
+                url = f'http://www.tsetmc.com/tsev2/data/InstTradeHistory.aspx?i={code}&Top=999999&A=0'
                 #ارسال درخواست
                 async with session.get(url, headers=headers) as response:
                     data_id = await response.text()
