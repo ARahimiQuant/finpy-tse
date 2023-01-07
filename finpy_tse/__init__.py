@@ -2369,7 +2369,7 @@ def Get_60D_PriceHistory(stock_list, adjust_price = True, show_progress = True, 
         print(f'STEP 1/4: Gathering historical price data of last 60 trading days ...')
     # send request:
     headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
-    r = requests.get('http://members.tsetmc.com/tsev2/data/ClosingPriceAll.aspx', headers=headers)
+    r = requests.get('http://www.tsetmc.com/tsev2/data/ClosingPriceAll.aspx', headers=headers)
 
     # clean the data:
     hist_60_days = pd.DataFrame(r.text.split(';'))
