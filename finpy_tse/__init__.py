@@ -817,7 +817,7 @@ def Get_IntradayOB_History(stock = 'کرمان', start_date = '1400-08-01', end_
     """
 # a function to get price data from a given page ----------------------------------------------------------------------------------
     def get_price_data_forintraday(ticker_no):
-        r = requests.get(f'http://members.tsetmc.com/tsev2/data/InstTradeHistory.aspx?i={ticker_no}&Top=999999&A=0', headers=headers)
+        r = requests.get(f'http://www.tsetmc.com/tsev2/data/InstTradeHistory.aspx?i={ticker_no}&Top=999999&A=0', headers=headers)
         df_history=pd.DataFrame(r.text.split(';'))
         columns=['Date','High','Low','Final','Close','Open','Y-Final','Value','Volume','No']
         #split data into defined columns
