@@ -2549,18 +2549,15 @@ def Get_ShareHoldersInfo(ticker = 'خودرو'):
     change_list = []
 
     for i in range(len(table)):
-        name_list.append(table[i].findAll("td")[0].text)
-        out_list.append(table[i].findAll("td")[1].findAll('div')[0].attrs['title'])
-        per_list.append(table[i].findAll("td")[2].text)
-        change_list.append(table[i].findAll("td")[3].text)
+        name_list.append(characters.ar_to_fa(table[i].findAll("td")[0].text))
+        out_list.append(int((table[i].findAll("td")[1].findAll('div')[0].attrs['title']).replace(',','')))
+        per_list.append(float(table[i].findAll("td")[2].text))
+        try:
+            change_list.append(int((table[i].findAll("td")[3].text).replace(',','')))
+        except:
+            change_list.append(int((table[i].findAll("td")[3].findAll('div')[0].attrs['title']).replace(',','')))
 
     df_sh = pd.DataFrame({'Name':name_list, 'ShareNo':out_list, 'SharePct':per_list, 'Changes':change_list})
-
-    # clean dataframe
-    df_sh['Name'] = df_sh['Name'].apply(lambda x:characters.ar_to_fa(x))
-    df_sh['ShareNo'] = df_sh['ShareNo'].apply(lambda x: int(x.replace(',','')))
-    df_sh['SharePct'] = df_sh['SharePct'].apply(lambda x: float(x))
-    df_sh['Changes'] = df_sh['Changes'].apply(lambda x: int(x.replace(',','')))
     df_sh['Ticker'] = ticker
     df_sh['Market'] = market
     df_sh.set_index(['Ticker','Market','Name'], inplace=True)
