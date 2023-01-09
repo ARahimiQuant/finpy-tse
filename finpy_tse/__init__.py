@@ -214,11 +214,13 @@ def Get_Price_History(stock = 'خودرو', start_date = '1400-01-01', end_date=
     df_history[cols] = df_history[cols].apply(pd.to_numeric, axis=1)
     #----------------------------------------------------------------------------------------------------------------------
     # Y-Final for new part of data could be 0 or 1000, we need to replace them with yesterday's final price:
-    df_history['Final(+1)'] = df_history['Final'].shift(+1)        # final prices shifted forward by one day
+    df_history['Final(+1)'] = df_history['Final'].shift(+1)          # final prices shifted forward by one day
+    df_history['Market(+1)'] = df_history['Market'].shift(+1)        # market shifted forward by one day
     df_history['temp'] = df_history.apply(lambda x: x['Y-Final'] if((x['Y-Final']!=0)and(x['Y-Final']!=1000)) 
-                                          else (x['Y-Final'] if(pd.isnull(x['Final(+1)'])) else x['Final(+1)']),axis = 1)
+                                          else (x['Y-Final'] if((x['Market(+1)']==x['Market'])or(pd.isnull(x['Final(+1)']))) 
+                                          else x['Final(+1)']),axis = 1)
     df_history['Y-Final'] = df_history['temp']
-    df_history.drop(columns=['Final(+1)','temp'],inplace=True)
+    df_history.drop(columns=['Final(+1)','temp','Market(+1)'],inplace=True)
     #-----------------------------------------------------------------------------------------------------------------------
     for col in cols:
         df_history[col] = df_history[col].apply(lambda x: int(x)) # convert to int because we do not have less than Rial
