@@ -1764,7 +1764,7 @@ def Build_Market_StockList(bourse = True, farabourse = True, payeh = True, detai
             print('Gathering Payeh market stock list ...')
         url = "https://www.ifb.ir/StockQoute.aspx"
         header = {"__EVENTTARGET": "exportbtn"}
-        response = requests.post(url, header)
+        response = requests.post(url, header, verify=False)
         table = pd.read_html(response.content.decode('utf-8'))[0]
         payeh_lookup = table.iloc[2:,:3]
         payeh_lookup.columns = ['Ticker','Name','Market']
