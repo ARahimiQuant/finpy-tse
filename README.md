@@ -98,7 +98,8 @@ fpy.Get_RI_History(
     end_date='1401-01-01',
     ignore_date=False,
     show_weekday=False,
-    double_date=False)
+    double_date=False,
+    alt=False)
 ```
 
 <p>&nbsp;</p>
