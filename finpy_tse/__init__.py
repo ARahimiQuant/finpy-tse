@@ -249,7 +249,7 @@ def Get_Price_History(stock = 'خودرو', start_date = '1400-01-01', end_date=
 ################################################################################################################################################################################
 ################################################################################################################################################################################
 
-def Get_RI_History(stock = 'خودرو', start_date = '1400-01-01', end_date='1401-01-01', ignore_date = False, show_weekday = False, double_date = False):
+def Get_RI_History(stock = 'خودرو', start_date = '1400-01-01', end_date='1401-01-01', ignore_date = False, show_weekday = False, double_date = False, alt = False):
     """
     دریافت سابقه اطلاعات حقیقی-حقوقی یک سهم در روزهای معاملاتی بین تاریخ شروع و پایان
     قابلیت دریافت همه سابقه حقیقی-حقوقی بدون توجه به تاریخ شروع و پایان
@@ -257,14 +257,24 @@ def Get_RI_History(stock = 'خودرو', start_date = '1400-01-01', end_date='14
     """
     # a function to get ri data from a given page ----------------------------------------------------------------------------------
     def get_ri_data(ticker_no,ticker,name, data_part):
-        r = requests.get(f'http://www.tsetmc.com/tsev2/data/clienttype.aspx?i={ticker_no}', headers=headers)
-        df_RI_tab=pd.DataFrame(r.text.split(';'))
-        # define columns
-        columns=['Date','No_Buy_R','No_Buy_I','No_Sell_R','No_Sell_I','Vol_Buy_R','Vol_Buy_I','Vol_Sell_R','Vol_Sell_I','Val_Buy_R','Val_Buy_I','Val_Sell_R','Val_Sell_I']
-        # split data into defined columns
-        df_RI_tab[columns] = df_RI_tab[0].str.split(",",expand=True)
-        # drop old column 0
-        df_RI_tab.drop(columns=[0],inplace=True)
+        if(alt):
+            r = requests.get(f'http://cdn.tsetmc.com/api/ClientType/GetClientTypeHistory/{ticker_no}',headers=headers)
+            df_RI_tab = pd.DataFrame(r.json()['clientType'])
+            cols = ['Date','WebID','Vol_Buy_R','Vol_Buy_I','Val_Buy_R','Val_Buy_I','No_Buy_I','Vol_Sell_R','No_Buy_R','Vol_Sell_I','Val_Sell_R','Val_Sell_I','No_Sell_I','No_Sell_R']
+            df_RI_tab.columns = cols
+            df_RI_tab = df_RI_tab[['Date','No_Buy_R','No_Buy_I','No_Sell_R','No_Sell_I','Vol_Buy_R','Vol_Buy_I','Vol_Sell_R','Vol_Sell_I','Val_Buy_R','Val_Buy_I','Val_Sell_R','Val_Sell_I']]
+            df_RI_tab['Date'] = df_RI_tab['Date'].apply(lambda x: str(x))
+            cols = ['No_Buy_R','No_Buy_I','No_Sell_R','No_Sell_I','Vol_Buy_R','Vol_Buy_I','Vol_Sell_R','Vol_Sell_I','Val_Buy_R','Val_Buy_I','Val_Sell_R','Val_Sell_I']
+            df_RI_tab[cols] = df_RI_tab[cols].astype('int64')
+        else:
+            r = requests.get(f'http://www.tsetmc.com/tsev2/data/clienttype.aspx?i={ticker_no}', headers=headers)
+            df_RI_tab=pd.DataFrame(r.text.split(';'))
+            # define columns
+            columns=['Date','No_Buy_R','No_Buy_I','No_Sell_R','No_Sell_I','Vol_Buy_R','Vol_Buy_I','Vol_Sell_R','Vol_Sell_I','Val_Buy_R','Val_Buy_I','Val_Sell_R','Val_Sell_I']
+            # split data into defined columns
+            df_RI_tab[columns] = df_RI_tab[0].str.split(",",expand=True)
+            # drop old column 0
+            df_RI_tab.drop(columns=[0],inplace=True)
         df_RI_tab['Date']=pd.to_datetime(df_RI_tab['Date'])
         df_RI_tab['Ticker'] = ticker
         df_RI_tab['Name'] = name
