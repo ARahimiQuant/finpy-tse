@@ -106,7 +106,7 @@ fpy.Get_RI_History(
 
 <div dir="rtl" align="right">
 
-# دریافت سابقه اطلاعات درون‌ریز یک نماد
+# دریافت سابقه اطلاعات درون‌روز یک نماد
 <hr style="border:2px solid gray"> </hr>
 
 
