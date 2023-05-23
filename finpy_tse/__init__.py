@@ -1734,7 +1734,7 @@ def Build_Market_StockList(bourse = True, farabourse = True, payeh = True, detai
         if(show_progress):
             clear_output(wait=True)
             print('Gathering Bourse market stock list ...')
-        r = http.request('GET', "http://www.tsetmc.com/Loader.aspx?ParTree=15131J&i=32097828799138957") 
+        r = http.request('GET', "http://old.tsetmc.com/Loader.aspx?ParTree=15131J&i=32097828799138957") 
         soup = BeautifulSoup(r.data.decode('utf-8'), 'html.parser')
         table = soup.findAll("table", {"class": "table1"})
         stock_list = table[0].find_all('a')
@@ -1753,7 +1753,7 @@ def Build_Market_StockList(bourse = True, farabourse = True, payeh = True, detai
         if(show_progress):
             clear_output(wait=True)
             print('Gathering Fara-Bourse market stock list ...')
-        r = http.request('GET', 'http://www.tsetmc.com/Loader.aspx?ParTree=15131J&i=43685683301327984') 
+        r = http.request('GET', 'http://old.tsetmc.com/Loader.aspx?ParTree=15131J&i=43685683301327984') 
         soup = BeautifulSoup(r.data.decode('utf-8'), 'html.parser')
         table = soup.findAll("table", {"class": "table1"})
         stock_list = table[0].find_all('a')
@@ -1815,7 +1815,7 @@ def Build_Market_StockList(bourse = True, farabourse = True, payeh = True, detai
             payeh_lookup['Ticker'] = payeh_lookup['Ticker'].apply(lambda x: characters.ar_to_fa(x))
             payeh_lookup = payeh_lookup.set_index('Ticker')
             # look for payeh market web-ids from market watch
-            r = requests.get('http://www.tsetmc.com/tsev2/data/MarketWatchPlus.aspx', headers=headers)
+            r = requests.get('http://old.tsetmc.com/tsev2/data/MarketWatchPlus.aspx', headers=headers)
             mkt_watch = pd.DataFrame((r.text.split('@')[2]).split(';'))
             mkt_watch = mkt_watch[0].str.split(",",expand=True)
             mkt_watch = mkt_watch[[0,2]]
@@ -1872,7 +1872,7 @@ def Build_Market_StockList(bourse = True, farabourse = True, payeh = True, detai
                         counter+=1
                 return df_final
             async def get_session(session, code):
-                url = f'http://www.tsetmc.com/Loader.aspx?Partree=15131M&i={code}'
+                url = f'http://old.tsetmc.com/Loader.aspx?Partree=15131M&i={code}'
                 async with session.get(url, headers=headers) as response:
                     try:
                         data_text = await response.text()
