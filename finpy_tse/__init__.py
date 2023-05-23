@@ -45,7 +45,7 @@ def __Check_JDate_Validity__(date, key_word):
 def __Get_TSE_WebID__(stock):
     # search TSE function ------------------------------------------------------------------------------------------------------------
     def request(name):
-        page = requests.get(f'http://www.tsetmc.com/tsev2/data/search.aspx?skey={name}', headers=headers)
+        page = requests.get(f'http://old.tsetmc.com/tsev2/data/search.aspx?skey={name}', headers=headers)
         data = []
         for i in page.text.split(';') :
             try :
@@ -158,7 +158,7 @@ def Get_Price_History(stock = 'خودرو', start_date = '1400-01-01', end_date=
     """
     # a function to get price data from a given page ----------------------------------------------------------------------------------
     def get_price_data(ticker_no,ticker,name, data_part):
-        r = requests.get(f'http://www.tsetmc.com/tsev2/data/InstTradeHistory.aspx?i={ticker_no}&Top=999999&A=0', headers=headers)
+        r = requests.get(f'http://old.tsetmc.com/tsev2/data/InstTradeHistory.aspx?i={ticker_no}&Top=999999&A=0', headers=headers)
         df_history=pd.DataFrame(r.text.split(';'))
         columns=['Date','High','Low','Final','Close','Open','Y-Final','Value','Volume','No']
         #split data into defined columns
@@ -1525,7 +1525,7 @@ def Get_MarketWatch(save_excel = True, save_path = 'D:/FinPy-TSE Data/MarketWatc
     #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # GET MARKET RETAIL AND INSTITUTIONAL DATA
     #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    r = requests.get('http://www.tsetmc.com/tsev2/data/ClientTypeAll.aspx', headers=headers)
+    r = requests.get('http://old.tsetmc.com/tsev2/data/ClientTypeAll.aspx', headers=headers)
     Mkt_RI_df = pd.DataFrame(r.text.split(';'))
     Mkt_RI_df = Mkt_RI_df[0].str.split(",",expand=True)
     # assign names to columns:
@@ -1540,7 +1540,7 @@ def Get_MarketWatch(save_excel = True, save_path = 'D:/FinPy-TSE Data/MarketWatc
     #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # GET MARKET WATCH PRICE AND OB DATA
     #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    r = requests.get('http://www.tsetmc.com/tsev2/data/MarketWatchPlus.aspx', headers=headers)
+    r = requests.get('http://old.tsetmc.com/tsev2/data/MarketWatchPlus.aspx', headers=headers)
     main_text = r.text
     Mkt_df = pd.DataFrame((main_text.split('@')[2]).split(';'))
     Mkt_df = Mkt_df[0].str.split(",",expand=True)
@@ -1556,7 +1556,7 @@ def Get_MarketWatch(save_excel = True, save_path = 'D:/FinPy-TSE Data/MarketWatc
     Mkt_df['Market'] = Mkt_df['Mkt-ID'].map({'300':'بورس','303':'فرابورس','305':'صندوق قابل معامله','309':'پایه','400':'حق تقدم بورس','403':'حق تقدم فرابورس','404':'حق تقدم پایه'})
     Mkt_df.drop(columns=['Mkt-ID'],inplace=True)   # we do not need Mkt-ID column anymore
     # assign sector names:
-    r = requests.get('http://www.tsetmc.com/Loader.aspx?ParTree=111C1213', headers=headers)
+    r = requests.get('http://old.tsetmc.com/Loader.aspx?ParTree=111C1213', headers=headers)
     sectro_lookup = (pd.read_html(r.text)[0]).iloc[1:,:]
     # convert from Arabic to Farsi and remove half-space
     sectro_lookup[1] = sectro_lookup[1].apply(lambda x: (str(x).replace('ي','ی')).replace('ك','ک'))
