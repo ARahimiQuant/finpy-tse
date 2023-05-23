@@ -357,21 +357,20 @@ def Get_CWI_History(start_date = '1395-01-01', end_date='1400-12-29', ignore_dat
     #---------------------------------------------------------------------------------------------------------------------------------------
     sector_web_id = 32097828799138957
     # get only close chart data for sector index:
-    r_cl = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i={sector_web_id}&t=value', headers=headers)
-    df_sector_cl = pd.DataFrame(r_cl.text.split(';'))
-    columns=['J-Date','Adj Close']
-    df_sector_cl[columns] = df_sector_cl[0].str.split(",",expand=True)
-    df_sector_cl.drop(columns=[0],inplace=True)
-    df_sector_cl['J-Date'] = df_sector_cl['J-Date'].apply(lambda x: str(jdatetime.date(int(x.split('/')[0]),int(x.split('/')[1]),int(x.split('/')[2]))))
-    df_sector_cl['Date'] = df_sector_cl['J-Date'].apply(lambda x: jdatetime.date(int(x[:4]),int(x[5:7]),int(x[8:])).togregorian())  
-    df_sector_cl['Date'] = pd.to_datetime(df_sector_cl['Date'])
+    r_cl = requests.get(f'http://cdn.tsetmc.com/api/Index/GetIndexB2History/{sector_web_id}', headers=headers)
+    df_sector_cl = pd.DataFrame(r_cl.json()['indexB2'])[['dEven','xNivInuClMresIbs']]
+    df_sector_cl['dEven'] = df_sector_cl['dEven'].apply(lambda x: str(x))
+    df_sector_cl['dEven'] = df_sector_cl['dEven'].apply(lambda x: x[:4]+'-'+x[4:6]+'-'+x[-2:])
+    df_sector_cl['dEven'] = pd.to_datetime(df_sector_cl['dEven'])
+    df_sector_cl.rename(columns={"dEven": "Date", "xNivInuClMresIbs":"Adj Close"}, inplace=True)
+    df_sector_cl['J-Date']=df_sector_cl['Date'].apply(lambda x: str(jdatetime.date.fromgregorian(date=x.date())))
     df_sector_cl['Weekday']=df_sector_cl['Date'].dt.weekday
     df_sector_cl['Weekday'] = df_sector_cl['Weekday'].apply(lambda x: calendar.day_name[x])
     df_sector_cl = df_sector_cl.set_index('J-Date')
     df_sector_cl = df_sector_cl[['Date','Weekday','Adj Close']]
     df_sector_cl['Adj Close'] = pd.to_numeric(df_sector_cl['Adj Close'])
     if(not just_adj_close):
-        r = requests.get(f'http://www.tsetmc.com/tsev2/chart/data/IndexFinancial.aspx?i={sector_web_id}&t=ph', headers=headers)
+        r = requests.get(f'http://old.tsetmc.com/tsev2/chart/data/IndexFinancial.aspx?i={sector_web_id}&t=ph', headers=headers)
         df_sector = pd.DataFrame(r.text.split(';'))
         columns=['Date','High','Low','Open','Close','Volume','D']
         # split data into defined columns
