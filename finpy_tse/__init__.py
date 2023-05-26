@@ -41,6 +41,81 @@ def __Check_JDate_Validity__(date, key_word):
             
 ################################################################################################################################################################################
 ################################################################################################################################################################################
+def get_tse_webid(stock:str = 'پترول') -> pd.DataFrame:
+    """
+    Takes ticker or firm's full name, does a live search in TSE new website and returns a multi-index Pandas dataframe that contains the following columns:
+    
+    Ticker: Symbol in the Tehran Stock Exchange.
+    Active: 1 shows the market in which the stock is currently trading. 
+    Name: firm's full name in the relevant market.
+    WebID: A numeric code that can be used for building request links and crawling the financial data of the given stock.
+    Market: Market name in Tehran Stock Exchange, markets the stock was traded in and is trading now (بورس، فرابورس، پایه زرد، پایه نارنجی، پایه قرمز).
+    
+    :param stock: (str) Ticker or firm's full name. 
+    :return: (pd.DataFrame) A dataframe that contains Ticker, Active, WebID, Name and Market columns for the requested stock.
+    """
+    
+    # basic search function: searches for and cleans the search results
+    def srch_req(srch_key):
+        srch_page = requests.get(f'http://cdn.tsetmc.com/api/Instrument/GetInstrumentSearch/{srch_key}', headers=headers)
+        srch_res = pd.DataFrame(srch_page.json()['instrumentSearch'])
+        srch_res = srch_res[['lVal18AFC','lVal30','insCode','lastDate','cgrValCot']]
+        srch_res.columns = ['Ticker','Name','WebID','Active','Market']
+        srch_res['Name'] = srch_res['Name'].apply(lambda x : characters.ar_to_fa(' '.join([i.strip() for i in x.split('\u200c')]).strip()))
+        srch_res['Ticker'] = srch_res['Ticker'].apply(lambda x : characters.ar_to_fa(''.join(x.split('\u200c')).strip()))
+        srch_res['NameSplit'] = srch_res['Name'].apply(lambda x : ''.join(x.split()).strip())
+        srch_res['SymbolSplit'] = srch_res['Ticker'].apply(lambda x : ''.join(x.split()).strip())
+        srch_res['Active'] = pd.to_numeric(srch_res['Active'])
+        srch_res = srch_res.sort_values('Ticker')
+        srch_res = pd.DataFrame(srch_res[['Name','WebID','NameSplit','SymbolSplit','Market']].values, columns=['Name','WebID',
+                                'NameSplit','SymbolSplit','Market'], index=pd.MultiIndex.from_frame(srch_res[['Ticker','Active']]))
+        return srch_res
+    
+    # checking function inputs
+    if type(stock) != str:
+        print('Please Enetr a Valid Ticker or Name!')
+        return False
+    
+    # special case that can not be found using ticker: convert ticker to full name!
+    if(stock=='آ س پ'):
+        stock = 'آ.س.پ'
+        
+    # generating search keys
+    stock = characters.ar_to_fa(''.join(stock.split('\u200c')).strip())
+    first_name = stock.split()[0]
+    stock = ''.join(stock.split())
+    
+    # start searching using keys, cleaning data, checking search results and handling special cases (ticker or full name)
+    data = srch_req(first_name)
+    df_symbol = data[data['SymbolSplit'] == stock]
+    df_name = data[data['NameSplit'] == stock]
+    
+    # matching search results with search key, cleaning the data and adding market data  
+    if len(df_symbol) > 0 :
+        df_symbol = df_symbol.sort_index(level=1,ascending=False).drop(['NameSplit','SymbolSplit'], axis=1)
+        df_symbol['Market'] = df_symbol['Market'].apply(lambda x: re.sub('[0-9]', '', x))
+        df_symbol['Market'] = df_symbol['Market'].map({'N':'بورس', 'Z':'فرابورس', 'D':'فرابورس', 'A':'پایه زرد', 'P':'پایه زرد', 'C':'پایه نارنجی', 'L':'پایه قرمز',
+                                                       'W':'کوچک و متوسط فرابورس', 'V':'کوچک و متوسط فرابورس',})
+        df_symbol['Market'] = df_symbol['Market'].fillna('نامعلوم')
+        return df_symbol
+    elif len(df_name) > 0 :
+        symbol = df_name.index[0][0]
+        data = srch_req(symbol)
+        symbol = characters.ar_to_fa(''.join(symbol.split('\u200c')).strip())
+        df_symbol = data[data.index.get_level_values('Ticker') == symbol]
+        if len(df_symbol) > 0 :
+            df_symbol = df_symbol.sort_index(level=1, ascending=False).drop(['NameSplit','SymbolSplit'], axis=1)
+            df_symbol['Market'] = df_symbol['Market'].apply(lambda x: re.sub('[0-9]', '', x))
+            df_symbol['Market'] = df_symbol['Market'].map({'N':'بورس', 'Z':'فرابورس', 'D':'فرابورس', 'A':'پایه زرد', 'P':'پایه زرد', 'C':'پایه نارنجی', 'L':'پایه قرمز',
+                                                           'W':'کوچک و متوسط فرابورس', 'V':'کوچک و متوسط فرابورس',})
+            df_symbol['Market'] = df_symbol['Market'].fillna('نامعلوم')
+            return df_symbol
+    
+    # invalid entry
+    print('Please Enetr a Valid Ticker or Name!')
+    
+    return False
+
 
 def __Get_TSE_WebID__(stock):
     # search TSE function ------------------------------------------------------------------------------------------------------------
