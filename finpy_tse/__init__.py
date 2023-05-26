@@ -223,6 +223,153 @@ def __Get_TSE_Sector_WebID__(sector_name):
 
 ################################################################################################################################################################################
 ################################################################################################################################################################################
+def get_price_history(stock:str = 'خودرو', 
+                      start_date:str = '1400-01-01', 
+                      end_date:str = '1401-01-01', 
+                      ignore_date:bool = False, 
+                      adjust_price:bool = False, 
+                      show_weekday:bool = False, 
+                      double_date:bool = False) -> pd.DataFrame:
+    
+    """
+    Takes ticker or firm's full name and returns a Pandas dataframe that contains the following columns:
+    
+    J-Date: Jalali date, as index
+    Date: Gregorian date
+    Weekday: Name of weekdays
+    Open: Opening price of day
+    High: Maximum price of day 
+    Low: Minimum price of day
+    Close: Closing price of day (آخرین قیمت)
+    Final: Weighted closing price of day (قیمت پایانی)
+    Volume: Traded volume of day
+    Value: Traded value of day in IRAN's Rial
+    No: Number of trades in a day
+    Ticker: Ticker/Symbol
+    Name: Firm's full name
+    Market: Market, the stock is traded in
+    Adj Open: Adjusted opening price of day for stock-splits and dividends
+    Adj High: Adjusted maximum price of day for stock-splits and dividends
+    Adj Low: Adjusted minimum price of day for stock-splits and dividends
+    Adj Close: Adjusted closing price of day for stock-splits and dividends
+    Adj Final: Adjusted weighted closing price of day for stock-splits and dividends
+    
+     * All data are taken from the new website of Tehran Stock Exchange.
+
+    :param stock: (str) Ticker or firm's full name. 
+    :param start_date: (str) Jalali date for starting day of historical price data in YYYY-MM-DD format.
+    :param end_date: (str) Jalali date for ending day of historical price data in YYYY-MM-DD format.
+    :param ignore_date: (bool) Ignores start_date and end_date and returns all available price history, if set to True.
+    :param adjust_price: (bool) Adjusts price for stock-splits and dividends, if set to True.
+    :param show_weekday: (bool) Shows weekdays in the output, if set to True.
+    :param double_date: (bool) Shows Gregorian date in the output, if set to True.
+    :return: (pd.DataFrame) A dataframe that contains J-Date as index and Date, Weekday, Open, High, Low, Close, Final, Volume, Value, No, Ticker, Name, Market, Adj Open, Adj High, Adj Low, Adj Close, Adj Final.
+    """
+
+    # basic request and data cleaning function for historical price data of a ticker for a given market 
+    def get_price_data(ticker_no, ticker, name, market):
+        r = requests.get(f'http://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDailyList/{ticker_no}/0', headers=headers)
+        df_history = pd.DataFrame(r.json()['closingPriceDaily'])
+        columns=['Date','High','Low','Final','Close','Open','Y-Final','Value','Volume','No']
+        df_history = df_history[['dEven','priceMax','priceMin','pClosing','pDrCotVal','priceFirst','priceYesterday','qTotCap','qTotTran5J','zTotTran']]
+        df_history.columns = ['Date','High','Low','Final','Close','Open','Y-Final','Value','Volume','No']
+        df_history['Date'] = df_history['Date'].apply(lambda x: str(x))
+        df_history['Date'] = df_history['Date'].apply(lambda x: f'{x[:4]}-{x[4:6]}-{x[-2:]}')
+        df_history['Date']=pd.to_datetime(df_history['Date'])
+        df_history = df_history[df_history['No']!=0]
+        df_history['Ticker'] = ticker
+        df_history['Name'] = name
+        df_history['Market'] = market
+        df_history = df_history.set_index('Date')
+        return df_history
+    
+    # check to see if the entry start and end dates are valid or not
+    if(not ignore_date):
+        start_date = __Check_JDate_Validity__(start_date,key_word="'START'")
+        if(start_date==None):
+            return
+        end_date = __Check_JDate_Validity__(end_date,key_word="'END'")
+        if(end_date==None):
+            return
+        start = jdatetime.date(year=int(start_date.split('-')[0]), month=int(start_date.split('-')[1]), day=int(start_date.split('-')[2]))
+        end = jdatetime.date(year=int(end_date.split('-')[0]), month=int(end_date.split('-')[1]), day=int(end_date.split('-')[2]))
+        if(start>end):
+            print('Start date must be a day before end date!')
+            return
+    
+    # search for WebIDs
+    ticker_no_df = get_tse_webid(stock)
+    if(type(ticker_no_df)==bool):
+        return
+    
+    # create an empty dataframe:
+    df_history = pd.DataFrame({},columns=['Date','High','Low','Final','Close','Open','Y-Final','Value','Volume','No','Ticker','Name','Market']).set_index('Date')
+    
+    # loop to get data from different pages of a ticker:
+    for index, row in (ticker_no_df.reset_index()).iterrows():
+        try:
+            df_temp = get_price_data(ticker_no = row['WebID'],ticker = row['Ticker'],name = row['Name'],market = row['Market'])
+            df_history = pd.concat([df_history,df_temp])
+        except:
+            pass
+        
+    # sort based on dated index:
+    df_history = df_history.sort_index(ascending=True)
+    df_history = df_history.reset_index()
+    
+    # add weekdays and j-date columns:
+    df_history['Weekday']=df_history['Date'].dt.weekday
+    df_history['Weekday'] = df_history['Weekday'].apply(lambda x: calendar.day_name[x])
+    df_history['J-Date']=df_history['Date'].apply(lambda x: str(jdatetime.date.fromgregorian(date=x.date())))
+    df_history = df_history.set_index('J-Date')
+    
+    # rearrange columns and convert some columns to numeric
+    df_history=df_history[['Date','Weekday','Y-Final','Open','High','Low','Close','Final','Volume','Value','No','Ticker','Name','Market']]
+    cols = ['Y-Final','Open','High','Low','Close','Final','Volume','No','Value']
+    df_history[cols] = df_history[cols].apply(pd.to_numeric, axis=1)
+    
+
+    # find stock moves between markets and adjust for nominal price in the new market, if necessary
+    df_history['Final(+1)'] = df_history['Final'].shift(+1)          
+    df_history['Market(+1)'] = df_history['Market'].shift(+1)        
+    df_history['temp'] = df_history.apply(lambda x: x['Y-Final'] if((x['Y-Final']!=0)and(x['Y-Final']!=1000)) 
+                                          else (x['Y-Final'] if((x['Market(+1)']==x['Market'])or(pd.isnull(x['Final(+1)']))) 
+                                          else x['Final(+1)']),axis = 1)
+    df_history['Y-Final'] = df_history['temp']
+    df_history.drop(columns=['Final(+1)','temp','Market(+1)'],inplace=True)
+    
+    # convert numbers to int because we do not have less than Rial, just for clean outputs!
+    for col in cols:
+        df_history[col] = df_history[col].apply(lambda x: int(x))
+
+    # Adjust price data, if requested:
+    if(adjust_price):
+        df_history['COEF'] = (df_history['Y-Final'].shift(-1)/df_history['Final']).fillna(1.0)
+        df_history['ADJ-COEF']=df_history.iloc[::-1]['COEF'].cumprod().iloc[::-1]
+        df_history['Adj Open'] = (df_history['Open']*df_history['ADJ-COEF']).apply(lambda x: int(x))
+        df_history['Adj High'] = (df_history['High']*df_history['ADJ-COEF']).apply(lambda x: int(x))
+        df_history['Adj Low'] = (df_history['Low']*df_history['ADJ-COEF']).apply(lambda x: int(x))
+        df_history['Adj Close'] = (df_history['Close']*df_history['ADJ-COEF']).apply(lambda x: int(x))
+        df_history['Adj Final'] = (df_history['Final']*df_history['ADJ-COEF']).apply(lambda x: int(x))
+        df_history.drop(columns=['COEF','ADJ-COEF'],inplace=True)
+    
+    # drop weekdays if not requested
+    if(not show_weekday):
+        df_history.drop(columns=['Weekday'],inplace=True)
+    
+    # drop Gregorian date if not requested
+    if(not double_date):
+        df_history.drop(columns=['Date'],inplace=True)
+    
+    # drop yesterday's final price!
+    df_history.drop(columns=['Y-Final'],inplace=True)
+    
+    # slice requested time window, if requested:
+    if(not ignore_date):
+        df_history = df_history[start_date:end_date]
+        
+    return df_history
+
 
 def Get_Price_History(stock = 'خودرو', start_date = '1400-01-01', end_date='1401-01-01', ignore_date = False, adjust_price = False, show_weekday = False, double_date = False):
     """
