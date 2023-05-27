@@ -2690,7 +2690,7 @@ def Get_60D_PriceHistory(stock_list, adjust_price = True, show_progress = True, 
                     counter+=1
             return df_final
         async def get_session(session, code):
-            url = f'http://www.tsetmc.com/Loader.aspx?Partree=15131M&i={code}'
+            url = f'http://old.tsetmc.com/Loader.aspx?Partree=15131M&i={code}'
             async with session.get(url, headers=headers) as response:
                 try:
                     data_text = await response.text()
@@ -2712,7 +2712,7 @@ def Get_60D_PriceHistory(stock_list, adjust_price = True, show_progress = True, 
         print(f'STEP 1/4: Gathering historical price data of last 60 trading days ...')
     # send request:
     headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
-    r = requests.get('http://www.tsetmc.com/tsev2/data/ClosingPriceAll.aspx', headers=headers)
+    r = requests.get('http://old.tsetmc.com/tsev2/data/ClosingPriceAll.aspx', headers=headers)
 
     # clean the data:
     hist_60_days = pd.DataFrame(r.text.split(';'))
@@ -2734,10 +2734,12 @@ def Get_60D_PriceHistory(stock_list, adjust_price = True, show_progress = True, 
     if(show_progress):
         clear_output(wait=True)
         print(f'STEP 2/4: Adding J-date to the historical data ...')
-    r_trading_days = requests.get(f'http://tsetmc.com/tsev2/chart/data/Index.aspx?i=32097828799138957&t=value', headers=headers)
-    df_trading_days = pd.DataFrame(r_trading_days.text.split(';'))
-    df_trading_days[['J-Date','Adj Close']] = df_trading_days[0].str.split(",",expand=True)
-    df_trading_days['J-Date'] = df_trading_days['J-Date'].apply(lambda x: str(jdatetime.date(int(x.split('/')[0]),int(x.split('/')[1]),int(x.split('/')[2]))))
+    r_trading_days = requests.get(f'http://cdn.tsetmc.com/api/Index/GetIndexB2History/32097828799138957', headers=headers)
+    df_trading_days = pd.DataFrame(r_trading_days.json()['indexB2'])[['dEven','xNivInuClMresIbs']]
+    df_trading_days['dEven'] = df_trading_days['dEven'].apply(lambda x: str(x))
+    df_trading_days['dEven'] = df_trading_days['dEven'].apply(lambda x: x[:4]+'-'+x[4:6]+'-'+x[-2:])
+    df_trading_days['dEven'] = pd.to_datetime(df_trading_days['dEven'])
+    df_trading_days['J-Date']=df_trading_days['dEven'].apply(lambda x: str(jdatetime.date.fromgregorian(date=x.date())))
     df_trading_days = df_trading_days.set_index('J-Date')[::-1].reset_index()[['J-Date']]
     df_trading_days = df_trading_days[:60]
     df_trading_days.index.name = 'n'
@@ -2748,7 +2750,7 @@ def Get_60D_PriceHistory(stock_list, adjust_price = True, show_progress = True, 
         clear_output(wait=True)
         print(f'STEP 3/4: Adding ticker names from market watch ...')
     # adding ticker names:
-    r = requests.get('http://www.tsetmc.com/tsev2/data/MarketWatchPlus.aspx', headers=headers)
+    r = requests.get('http://old.tsetmc.com/tsev2/data/MarketWatchPlus.aspx', headers=headers)
     main_text = r.text
     Mkt_df = pd.DataFrame((main_text.split('@')[2]).split(';'))
     Mkt_df = Mkt_df[0].str.split(",",expand=True)
