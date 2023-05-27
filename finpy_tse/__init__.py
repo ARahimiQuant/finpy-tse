@@ -2877,11 +2877,11 @@ def Get_ShareHoldersInfo(ticker = 'خودرو'):
     market = ticker_no_df['Market'].values[0]
 
     # get isin id
-    r = requests.get(f'http://www.tsetmc.com/Loader.aspx?Partree=15131M&i={wid}', headers=headers)
+    r = requests.get(f'http://old.tsetmc.com/Loader.aspx?Partree=15131M&i={wid}', headers=headers)
     isin_id = pd.read_html(r.text)[0].iloc[7,1]
 
     # get shareholders data
-    r = requests.get(f'http://www.tsetmc.com/Loader.aspx?Partree=15131T&c={isin_id}', headers=headers)
+    r = requests.get(f'http://old.tsetmc.com/Loader.aspx?Partree=15131T&c={isin_id}', headers=headers)
     soup = BeautifulSoup(r.text, 'html.parser')
     table = soup.findAll("table", {"class": "table1"})[0].findAll("tr", {"class": "sh"})
 
