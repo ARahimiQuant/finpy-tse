@@ -1884,13 +1884,19 @@ def Get_MarketWatch(save_excel = True, save_path = 'D:/FinPy-TSE Data/MarketWatc
     Mkt_df['Market'] = Mkt_df['Mkt-ID'].map({'300':'بورس','303':'فرابورس','305':'صندوق قابل معامله','309':'پایه','400':'حق تقدم بورس','403':'حق تقدم فرابورس','404':'حق تقدم پایه'})
     Mkt_df.drop(columns=['Mkt-ID'],inplace=True)   # we do not need Mkt-ID column anymore
     # assign sector names:
-    r = requests.get('http://old.tsetmc.com/Loader.aspx?ParTree=111C1213', headers=headers)
-    sectro_lookup = (pd.read_html(r.text)[0]).iloc[1:,:]
-    # convert from Arabic to Farsi and remove half-space
-    sectro_lookup[1] = sectro_lookup[1].apply(lambda x: (str(x).replace('ي','ی')).replace('ك','ک'))
-    sectro_lookup[1] = sectro_lookup[1].apply(lambda x: x.replace('\u200c',' '))
-    sectro_lookup[1] = sectro_lookup[1].apply(lambda x: x.strip())
-    Mkt_df['Sector'] = Mkt_df['Sector'].map(dict(sectro_lookup[[0, 1]].values))
+    r = requests.get('https://cdn.tsetmc.com/api/StaticData/GetStaticData', headers=headers)
+    sec_df = pd.DataFrame(r.json()['staticData'])
+    sec_df['code'] = (sec_df['code'].astype(str).apply(lambda x: '0' + x if len(x) == 1 else x))
+    sec_df['name'] = (sec_df['name'].apply(lambda x: re.sub(r'\u200c', '', x)).str.strip().apply(characters.ar_to_fa))
+    sec_df = sec_df[sec_df['type'] == 'IndustrialGroup'][['code', 'name']]
+    Mkt_df['Sector'] = Mkt_df['Sector'].map(dict(sec_df[['code', 'name']].values))
+    # r = requests.get('http://old.tsetmc.com/Loader.aspx?ParTree=111C1213', headers=headers)
+    # sectro_lookup = (pd.read_html(r.text)[0]).iloc[1:,:]
+    # # convert from Arabic to Farsi and remove half-space
+    # sectro_lookup[1] = sectro_lookup[1].apply(lambda x: (str(x).replace('ي','ی')).replace('ك','ک'))
+    # sectro_lookup[1] = sectro_lookup[1].apply(lambda x: x.replace('\u200c',' '))
+    # sectro_lookup[1] = sectro_lookup[1].apply(lambda x: x.strip())
+    # Mkt_df['Sector'] = Mkt_df['Sector'].map(dict(sectro_lookup[[0, 1]].values))
     # modify format of columns:
     cols = ['Open','Final','Close','No','Volume','Value','Low','High','Y-Final','EPS','Base-Vol','Day_UL','Day_LL','Share-No']
     Mkt_df[cols] = Mkt_df[cols].apply(pd.to_numeric, axis=1)
