@@ -147,6 +147,8 @@ def __Get_TSE_WebID__(stock):
     # cleaning input search key
     stock = characters.ar_to_fa(''.join(stock.split('\u200c')).strip())
     first_name = stock.split()[0]
+    if(stock=='فن آوا'):
+        first_name = stock
     stock = ''.join(stock.split())
     # search TSE and process:
     data = request(first_name)
